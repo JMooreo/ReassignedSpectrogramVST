@@ -9,6 +9,11 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Fifo.h"
+#include "SingleChannelSampleFifo.h"
+#include "Channel.h"
+#include "ChainSettings.h"
+#include "FFTDataGenerator.h"
 
 //==============================================================================
 /**
@@ -53,7 +58,17 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameterLayout() };
+
+    using BlockType = juce::AudioBuffer<float>;
+    SingleChannelSampleFifo<BlockType> leftChannelFifo{ Channel::Left };
+    SingleChannelSampleFifo<BlockType> rightChannelFifo{ Channel::Right };
+
 private:
+    juce::dsp::Oscillator<float> osc;
+
+    void updateSettings();
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpectrogramVSTAudioProcessor)
 };

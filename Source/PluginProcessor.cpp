@@ -8,6 +8,11 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Fifo.h"
+#include "SingleChannelSampleFifo.h"
+#include "Channel.h"
+#include "ChainSettings.h"
+#include "FFTDataGenerator.h"
 
 //==============================================================================
 SpectrogramVSTAudioProcessor::SpectrogramVSTAudioProcessor()
@@ -90,11 +95,35 @@ void SpectrogramVSTAudioProcessor::changeProgramName (int index, const juce::Str
 {
 }
 
+void SpectrogramVSTAudioProcessor::updateSettings()
+{
+    //auto chainSettings = getChainSettings(apvts);
+
+    //updateLowCutFilters(chainSettings);
+    //updatePeakFilter(chainSettings);
+    //updateHighCutFilters(chainSettings);
+}
+
 //==============================================================================
 void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    juce::dsp::ProcessSpec spec;
+
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = 1;
+    spec.sampleRate = sampleRate;
+
+    // updateSettings()
+
+    leftChannelFifo.prepare(samplesPerBlock);
+    rightChannelFifo.prepare(samplesPerBlock);
+
+    // Create an oscillator that will produce a test frequency for us.
+    osc.initialise([](float x) { return std::sin(x); });
+
+    spec.numChannels = getTotalNumOutputChannels();
+    osc.prepare(spec);
+    osc.setFrequency(440);
 }
 
 void SpectrogramVSTAudioProcessor::releaseResources()
@@ -144,43 +173,65 @@ void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
+    juce::dsp::AudioBlock<float> block(buffer);
 
-        // ..do something to the data...
-    }
+    auto leftBlock = block.getSingleChannelBlock(0);
+    auto rightBlock = block.getSingleChannelBlock(1);
+
+    juce::dsp::ProcessContextReplacing<float> leftContext(leftBlock);
+    juce::dsp::ProcessContextReplacing<float> rightContext(rightBlock);
 }
 
 //==============================================================================
-bool SpectrogramVSTAudioProcessor::hasEditor() const
-{
+bool SpectrogramVSTAudioProcessor::hasEditor() const {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* SpectrogramVSTAudioProcessor::createEditor()
-{
-    return new SpectrogramVSTAudioProcessorEditor (*this);
+juce::AudioProcessorEditor* SpectrogramVSTAudioProcessor::createEditor() {
+    return new juce::GenericAudioProcessorEditor(*this);
+    //return new SpectrogramVSTAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void SpectrogramVSTAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
-{
+void SpectrogramVSTAudioProcessor::getStateInformation (juce::MemoryBlock& destData) {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    juce::MemoryOutputStream mos(destData, true);
+    apvts.state.writeToStream(mos);
 }
 
-void SpectrogramVSTAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
-{
+void SpectrogramVSTAudioProcessor::setStateInformation (const void* data, int sizeInBytes) {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout SpectrogramVSTAudioProcessor::createParameterLayout() {
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Low Frequency",
+        "Low Frequency",
+        juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.25f),
+        20.f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>("High Frequency",
+        "High Frequency",
+        juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.9f),
+        20000.f));
+
+    juce::StringArray fftOptions;
+    for (int i = 8; i < 11; i++) {
+        juce::String str;
+
+        str << (2 << i); // 2^i
+
+        fftOptions.add(str);
+    }
+
+    layout.add(std::make_unique<juce::AudioParameterChoice>("FFT Size", "FFT Size", fftOptions, 0));
+
+
+    return layout;
 }
 
 //==============================================================================
