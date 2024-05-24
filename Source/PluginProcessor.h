@@ -21,6 +21,9 @@
 class SpectrogramVSTAudioProcessor  : public juce::AudioProcessor
 {
 public:
+    FFTDataGenerator<std::vector<float>> leftChannelFFTDataGenerator;
+    FFTDataGenerator<std::vector<float>> rightChannelFFTDataGenerator;
+
     //==============================================================================
     SpectrogramVSTAudioProcessor();
     ~SpectrogramVSTAudioProcessor() override;

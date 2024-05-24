@@ -3,9 +3,9 @@
 
 enum FFTOrder
 {
+    order512 = 9,
+    order1024 = 10,
     order2048 = 11,
-    order4096 = 12,
-    order8192 = 13
 };
 
 template<typename BlockType>

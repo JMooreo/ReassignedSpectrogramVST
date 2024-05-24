@@ -11,11 +11,14 @@
 
 //==============================================================================
 SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (SpectrogramVSTAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    :   AudioProcessorEditor(&p),
+        audioProcessor(p),
+        forwardFFT(FFTOrder::order1024),
+        window(1024, juce::dsp::WindowingFunction<float>::hann)
 {
-    // Make sure that before the constructor has finished, you've set the
-    // editor's size to whatever you need it to be.
-    setSize (400, 300);
+    setSize(800, 600);
+    startTimerHz(144);
+    monoBuffer.setSize(1, 1024);
 }
 
 SpectrogramVSTAudioProcessorEditor::~SpectrogramVSTAudioProcessorEditor()
@@ -26,11 +29,9 @@ SpectrogramVSTAudioProcessorEditor::~SpectrogramVSTAudioProcessorEditor()
 void SpectrogramVSTAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
-    g.setColour (juce::Colours::white);
-    g.setFont (15.0f);
-    g.drawFittedText ("Hello World!", getLocalBounds(), juce::Justification::centred, 1);
+    g.fillAll(juce::Colours::black);
+    auto area = getLocalBounds();
+    drawSpectrogram(g, area);
 }
 
 void SpectrogramVSTAudioProcessorEditor::resized()

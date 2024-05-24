@@ -118,6 +118,8 @@ void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samples
     leftChannelFifo.prepare(samplesPerBlock);
     rightChannelFifo.prepare(samplesPerBlock);
 
+    leftChannelFFTDataGenerator.changeFFTSize(FFTOrder::order1024);
+
     // Create an oscillator that will produce a test frequency for us.
     osc.initialise([](float x) { return std::sin(x); });
 
@@ -173,13 +175,8 @@ void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    juce::dsp::AudioBlock<float> block(buffer);
-
-    auto leftBlock = block.getSingleChannelBlock(0);
-    auto rightBlock = block.getSingleChannelBlock(1);
-
-    juce::dsp::ProcessContextReplacing<float> leftContext(leftBlock);
-    juce::dsp::ProcessContextReplacing<float> rightContext(rightBlock);
+    leftChannelFifo.update(buffer);
+    rightChannelFifo.update(buffer);
 }
 
 //==============================================================================
@@ -188,8 +185,8 @@ bool SpectrogramVSTAudioProcessor::hasEditor() const {
 }
 
 juce::AudioProcessorEditor* SpectrogramVSTAudioProcessor::createEditor() {
-    return new juce::GenericAudioProcessorEditor(*this);
-    //return new SpectrogramVSTAudioProcessorEditor (*this);
+    //return new juce::GenericAudioProcessorEditor(*this);
+    return new SpectrogramVSTAudioProcessorEditor (*this);
 }
 
 //==============================================================================
@@ -220,10 +217,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout SpectrogramVSTAudioProcessor
         20000.f));
 
     juce::StringArray fftOptions;
-    for (int i = 8; i < 11; i++) {
+    for (int i = 9; i < 12; i++) {
         juce::String str;
 
-        str << (2 << i); // 2^i
+        str << (1 << i); // 2^i
 
         fftOptions.add(str);
     }
