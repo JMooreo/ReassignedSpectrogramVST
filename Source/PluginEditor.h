@@ -10,7 +10,9 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-
+#include <vector>
+#include <complex>
+#include <cmath>
 //==============================================================================
 /**
 */
@@ -37,24 +39,60 @@ private:
         return *std::max_element(data.begin(), data.begin() + size);
     }
 
+    // Function to interpolate between two colors
+    juce::Colour interpolateColor(float t, juce::Colour start, juce::Colour end)
+    {
+        return start.interpolatedWith(end, t);
+    }
+
+    // Function to get the color based on the amplitude level
+    juce::Colour getColorForLevel(float level)
+    {
+        if (level <= 0.33f)
+        {
+            return interpolateColor(level / 0.33f, juce::Colours::black, juce::Colours::purple);
+        }
+        else if (level <= 0.66f)
+        {
+            return interpolateColor((level - 0.33f) / 0.33f, juce::Colours::purple, juce::Colours::orange);
+        }
+        else
+        {
+            return interpolateColor((level - 0.66f) / 0.34f, juce::Colours::orange, juce::Colours::yellow);
+        }
+    }
+
     void drawNextFrameOfSpectrogram(std::vector<float> fftData, int fftSize)
     {
-        using namespace juce;
+        auto maxLevel = 10.f;
+        auto height = spectrogramImage.getHeight();
+        int prevY = juce::jmap(std::log10(1.0 + 0), 0.0, std::log10(1.0 + fftSize / 2), 0.0, (double)height);
 
-        auto maxLevel = findMaximum(fftData, fftSize / 2);
-
-        for (int i = 1; i < fftSize / 2; ++i) {
-
+        for (int i = 1; i < fftSize / 2; ++i)
+        {
             float level = 0;
 
             if (maxLevel > -96.f)
             {
-                level = jmap(fftData[i], -96.f, maxLevel, 0.0f, 1.0f);
+                level = juce::jmap(fftData[i], -96.f, maxLevel, 0.0f, 1.0f);
             }
-             
-            spectrogramImage.setPixelAt(spectrogramImagePos, (fftSize / 2) - i, Colour::fromFloatRGBA(level, level, level, 1.0f));
+
+            // Map frequency index to logarithmic scale
+            int y = juce::jmap(std::log10(1.0 + i), 0.0, std::log10(1.0 + fftSize / 2), 0.0, (double)height);
+
+            // Ensure y is within the bounds of the image height
+            y = juce::jlimit(0, height - 1, y);
+
+            // Fill the gap between prevY and y
+            for (int fillY = std::min(prevY, y); fillY <= std::max(prevY, y); ++fillY)
+            {
+                spectrogramImage.setPixelAt(spectrogramImagePos, height - fillY - 1, getColorForLevel(level));
+            }
+
+            prevY = y;
         }
 
+        // Update the spectrogram image position
         if (++spectrogramImagePos >= spectrogramImage.getWidth())
         {
             spectrogramImagePos = 0;
@@ -63,6 +101,7 @@ private:
 
     void timerCallback() override
     {
+
         juce::AudioBuffer<float> tempIncomingBuffer;
         std::vector<float> fftData;
 
@@ -72,20 +111,25 @@ private:
             {
                 auto size = tempIncomingBuffer.getNumSamples();
 
-                juce::FloatVectorOperations::copy(monoBuffer.getWritePointer(0, 0),
+                juce::FloatVectorOperations::copy(
+                    monoBuffer.getWritePointer(0, 0),
                     monoBuffer.getReadPointer(0, size),
-                    monoBuffer.getNumSamples() - size);
+                    monoBuffer.getNumSamples() - size
+                );
 
-                juce::FloatVectorOperations::copy(monoBuffer.getWritePointer(0, monoBuffer.getNumSamples() - size),
+                juce::FloatVectorOperations::copy(
+                    monoBuffer.getWritePointer(0, monoBuffer.getNumSamples() - size),
                     tempIncomingBuffer.getReadPointer(0, 0),
-                    size);
+                    size
+                );
 
                 audioProcessor.leftChannelFFTDataGenerator.produceFFTDataForRendering(monoBuffer, -96.f);
             }
         }
 
-        if (audioProcessor.leftChannelFFTDataGenerator.getFFTData(fftData))
+        if (audioProcessor.leftChannelFFTDataGenerator.getNumAvailableFFTDataBlocks() > 0)
         {
+            audioProcessor.leftChannelFFTDataGenerator.getFFTData(fftData);
             drawNextFrameOfSpectrogram(fftData, audioProcessor.leftChannelFFTDataGenerator.getFFTSize());
             repaint();
         }

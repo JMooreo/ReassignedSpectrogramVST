@@ -13,12 +13,12 @@
 SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (SpectrogramVSTAudioProcessor& p)
     :   AudioProcessorEditor(&p),
         audioProcessor(p),
-        forwardFFT(FFTOrder::order1024),
-        window(1024, juce::dsp::WindowingFunction<float>::hann)
+        forwardFFT(FFTOrder::order8192),
+        window(8192, juce::dsp::WindowingFunction<float>::hann)
 {
-    setSize(800, 600);
-    startTimerHz(144);
-    monoBuffer.setSize(1, 1024);
+    setSize(512, 512);
+    startTimerHz(60);
+    monoBuffer.setSize(1, 8192);
 }
 
 SpectrogramVSTAudioProcessorEditor::~SpectrogramVSTAudioProcessorEditor()

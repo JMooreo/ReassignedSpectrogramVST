@@ -12,7 +12,6 @@
 #include "SingleChannelSampleFifo.h"
 #include "Channel.h"
 #include "ChainSettings.h"
-#include "FFTDataGenerator.h"
 
 //==============================================================================
 SpectrogramVSTAudioProcessor::SpectrogramVSTAudioProcessor()
@@ -118,14 +117,14 @@ void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samples
     leftChannelFifo.prepare(samplesPerBlock);
     rightChannelFifo.prepare(samplesPerBlock);
 
-    leftChannelFFTDataGenerator.changeFFTSize(FFTOrder::order1024);
+    leftChannelFFTDataGenerator.changeOrder(FFTOrder::order8192);
 
     // Create an oscillator that will produce a test frequency for us.
     osc.initialise([](float x) { return std::sin(x); });
 
     spec.numChannels = getTotalNumOutputChannels();
     osc.prepare(spec);
-    osc.setFrequency(440);
+    osc.setFrequency(500);
 }
 
 void SpectrogramVSTAudioProcessor::releaseResources()
@@ -162,18 +161,12 @@ bool SpectrogramVSTAudioProcessor::isBusesLayoutSupported (const BusesLayout& la
 
 void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    //juce::dsp::AudioBlock<float> block(buffer);
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+    //buffer.clear();
+
+    //juce::dsp::ProcessContextReplacing<float> stereoContext(block);
+    //osc.process(stereoContext);
 
     leftChannelFifo.update(buffer);
     rightChannelFifo.update(buffer);
