@@ -21,8 +21,7 @@
 class SpectrogramVSTAudioProcessor  : public juce::AudioProcessor
 {
 public:
-    FFTDataGenerator<std::vector<float>> leftChannelFFTDataGenerator;
-    FFTDataGenerator<std::vector<float>> rightChannelFFTDataGenerator;
+    FFTDataGenerator fftDataGenerator;
 
     //==============================================================================
     SpectrogramVSTAudioProcessor();
@@ -49,6 +48,7 @@ public:
     bool producesMidi() const override;
     bool isMidiEffect() const override;
     double getTailLengthSeconds() const override;
+    void SpectrogramVSTAudioProcessor::pushIntoLongBuffer(juce::AudioBuffer<float>& buffer);
 
     //==============================================================================
     int getNumPrograms() override;
@@ -63,13 +63,10 @@ public:
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameterLayout() };
-
-    using BlockType = juce::AudioBuffer<float>;
-    SingleChannelSampleFifo<BlockType> leftChannelFifo{ Channel::Left };
-    SingleChannelSampleFifo<BlockType> rightChannelFifo{ Channel::Right };
-
+    juce::AudioBuffer<float> longAudioBuffer;
 private:
     juce::dsp::Oscillator<float> osc;
+    juce::dsp::Gain<float> gain;
 
     void updateSettings();
     //==============================================================================

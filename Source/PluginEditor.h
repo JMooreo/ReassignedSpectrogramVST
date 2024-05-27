@@ -62,34 +62,69 @@ private:
         }
     }
 
-    void drawNextFrameOfSpectrogram(std::vector<float> fftData, int fftSize)
+    void drawNextFrameOfSpectrogramReassigned(
+        std::vector<float>& deltaTime,
+        std::vector<float>& frequencyBins,
+        std::vector<float>& magnitudes
+    ) {
+        // Define the height and width of the spectrogram image
+        int spectrogramHeight = spectrogramImage.getHeight();
+        int spectrogramWidth = spectrogramImage.getWidth();
+
+        // Clear the current column
+        for (int y = 0; y < spectrogramHeight; ++y) {
+            spectrogramImage.setPixelAt(spectrogramImagePos, y, juce::Colours::black);
+        }
+
+        // Define the min and max frequencies for the log scale
+        float minFrequency = 20.0f;  // Minimum frequency to display
+        float maxFrequency = 24000.0f; // Nyquist frequency (half the sample rate)
+
+        for (int i = 0; i < deltaTime.size(); ++i) {
+            // Calculate the x and y positions in the spectrogram image
+            float reassignedTime = (spectrogramImagePos + (int)deltaTime[i]) % spectrogramWidth;
+            if (reassignedTime < 0) {
+                reassignedTime += spectrogramWidth;
+            }
+
+            float reassignedFrequency = frequencyBins[i];
+            float magnitude = magnitudes[i];
+
+            // Logarithmic mapping of the frequency
+            float logFrequency = std::log10(reassignedFrequency / minFrequency + 1);
+            float logMaxFrequency = std::log10(maxFrequency / minFrequency + 1);
+
+            // Normalize the log-mapped frequency to the spectrogram dimensions
+
+            // Ensure the indices are within bounds
+            int x = static_cast<int>(reassignedTime);
+            int y = spectrogramHeight - i;
+
+            if (x >= 0 && x < spectrogramWidth && y >= 0 && y < spectrogramHeight) {
+                // Calculate the color intensity based on the magnitude
+                juce::Colour colour = juce::Colour::fromHSV(0.0f, 0.0f, magnitude, 1.0f);
+
+                // Set the pixel at the calculated position
+                spectrogramImage.setPixelAt(x, y, colour);
+            }
+        }
+
+        // Update the position for the next frame
+        if (++spectrogramImagePos >= spectrogramWidth) {
+            spectrogramImagePos = 0;
+        }
+    }
+
+    void drawNextFrameOfSpectrogram(std::vector<float> normalizedMagnitudes, int fftSize)
     {
-        auto maxLevel = 10.f;
+        auto maxLevel = 1.f;
+
         auto height = spectrogramImage.getHeight();
-        int prevY = juce::jmap(std::log10(1.0 + 0), 0.0, std::log10(1.0 + fftSize / 2), 0.0, (double)height);
 
-        for (int i = 1; i < fftSize / 2; ++i)
+        for (int i = 0; i < height; i++)
         {
-            float level = 0;
-
-            if (maxLevel > -96.f)
-            {
-                level = juce::jmap(fftData[i], -96.f, maxLevel, 0.0f, 1.0f);
-            }
-
-            // Map frequency index to logarithmic scale
-            int y = juce::jmap(std::log10(1.0 + i), 0.0, std::log10(1.0 + fftSize / 2), 0.0, (double)height);
-
-            // Ensure y is within the bounds of the image height
-            y = juce::jlimit(0, height - 1, y);
-
-            // Fill the gap between prevY and y
-            for (int fillY = std::min(prevY, y); fillY <= std::max(prevY, y); ++fillY)
-            {
-                spectrogramImage.setPixelAt(spectrogramImagePos, height - fillY - 1, getColorForLevel(level));
-            }
-
-            prevY = y;
+            auto level = normalizedMagnitudes[i] - 0.5;
+            spectrogramImage.setPixelAt(spectrogramImagePos, height - i, getColorForLevel(level));
         }
 
         // Update the spectrogram image position
@@ -101,38 +136,8 @@ private:
 
     void timerCallback() override
     {
-
-        juce::AudioBuffer<float> tempIncomingBuffer;
-        std::vector<float> fftData;
-
-        while (audioProcessor.leftChannelFifo.getNumCompleteBuffersAvailable() > 0)
-        {
-            if (audioProcessor.leftChannelFifo.getAudioBuffer(tempIncomingBuffer))
-            {
-                auto size = tempIncomingBuffer.getNumSamples();
-
-                juce::FloatVectorOperations::copy(
-                    monoBuffer.getWritePointer(0, 0),
-                    monoBuffer.getReadPointer(0, size),
-                    monoBuffer.getNumSamples() - size
-                );
-
-                juce::FloatVectorOperations::copy(
-                    monoBuffer.getWritePointer(0, monoBuffer.getNumSamples() - size),
-                    tempIncomingBuffer.getReadPointer(0, 0),
-                    size
-                );
-
-                audioProcessor.leftChannelFFTDataGenerator.produceFFTDataForRendering(monoBuffer, -96.f);
-            }
-        }
-
-        if (audioProcessor.leftChannelFFTDataGenerator.getNumAvailableFFTDataBlocks() > 0)
-        {
-            audioProcessor.leftChannelFFTDataGenerator.getFFTData(fftData);
-            drawNextFrameOfSpectrogram(fftData, audioProcessor.leftChannelFFTDataGenerator.getFFTSize());
-            repaint();
-        }
+        audioProcessor.fftDataGenerator.reassignedSpectrogram(spectrogramImage, audioProcessor.longAudioBuffer);
+        repaint();
     }
 
     void drawSpectrogram(juce::Graphics& g, juce::Rectangle<int> area)

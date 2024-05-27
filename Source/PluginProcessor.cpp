@@ -109,22 +109,20 @@ void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samples
     juce::dsp::ProcessSpec spec;
 
     spec.maximumBlockSize = samplesPerBlock;
-    spec.numChannels = 1;
+    spec.numChannels = 2;
     spec.sampleRate = sampleRate;
 
     // updateSettings()
 
-    leftChannelFifo.prepare(samplesPerBlock);
-    rightChannelFifo.prepare(samplesPerBlock);
-
-    leftChannelFFTDataGenerator.changeOrder(FFTOrder::order8192);
+    longAudioBuffer.setSize(2, samplesPerBlock * 100); // Save some number of blocks in a long buffer.
 
     // Create an oscillator that will produce a test frequency for us.
     osc.initialise([](float x) { return std::sin(x); });
+    gain.setGainLinear(0.1f);
 
     spec.numChannels = getTotalNumOutputChannels();
     osc.prepare(spec);
-    osc.setFrequency(500);
+    osc.setFrequency(400);
 }
 
 void SpectrogramVSTAudioProcessor::releaseResources()
@@ -161,16 +159,37 @@ bool SpectrogramVSTAudioProcessor::isBusesLayoutSupported (const BusesLayout& la
 
 void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    //juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::AudioBlock<float> block(buffer);
 
     //buffer.clear();
 
     //juce::dsp::ProcessContextReplacing<float> stereoContext(block);
     //osc.process(stereoContext);
+    //gain.process(stereoContext);
 
-    leftChannelFifo.update(buffer);
-    rightChannelFifo.update(buffer);
+    pushIntoLongBuffer(buffer);
 }
+
+void SpectrogramVSTAudioProcessor::pushIntoLongBuffer(juce::AudioBuffer<float>& buffer) {
+    int size = buffer.getNumSamples();
+
+    for (int channel = 0; channel < 2; channel++) {
+        // Move the existing data back by the size of the new buffer
+        juce::FloatVectorOperations::copy(
+            longAudioBuffer.getWritePointer(channel, 0), // destination
+            longAudioBuffer.getReadPointer(channel, size), // source
+            longAudioBuffer.getNumSamples() - size // num values
+        );
+
+        // Put the new data into the buffer
+        juce::FloatVectorOperations::copy(
+            longAudioBuffer.getWritePointer(channel, longAudioBuffer.getNumSamples() - size), // destination
+            buffer.getReadPointer(channel, 0), // source
+            size
+        );
+    }
+}
+
 
 //==============================================================================
 bool SpectrogramVSTAudioProcessor::hasEditor() const {
