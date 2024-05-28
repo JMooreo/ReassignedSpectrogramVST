@@ -114,15 +114,15 @@ void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samples
 
     // updateSettings()
 
-    longAudioBuffer.setSize(2, samplesPerBlock * 100); // Save some number of blocks in a long buffer.
+    longAudioBuffer.setSize(2, 10000); // Save some number of blocks in a long buffer.
 
     // Create an oscillator that will produce a test frequency for us.
     osc.initialise([](float x) { return std::sin(x); });
-    gain.setGainLinear(0.1f);
+    gain.setGainLinear(1.f);
 
     spec.numChannels = getTotalNumOutputChannels();
     osc.prepare(spec);
-    osc.setFrequency(400);
+    osc.setFrequency(40);
 }
 
 void SpectrogramVSTAudioProcessor::releaseResources()
@@ -163,7 +163,7 @@ void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
 
     //buffer.clear();
 
-    //juce::dsp::ProcessContextReplacing<float> stereoContext(block);
+    juce::dsp::ProcessContextReplacing<float> stereoContext(block);
     //osc.process(stereoContext);
     //gain.process(stereoContext);
 

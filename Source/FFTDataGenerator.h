@@ -13,11 +13,15 @@ enum FFTOrder
 class FFTDataGenerator
 {
 public:
-    void reassignedSpectrogram(juce::Image spectrogramImage, juce::AudioBuffer<float>& buffer) {
-        float fftSize = 1024;
+    void reassignedSpectrogram(
+        juce::AudioBuffer<float>& buffer,
+        const float fftSize,
+        std::vector<std::vector<float>>& times,
+        std::vector<std::vector<float>>& frequencies,
+        std::vector<std::vector<float>>& magnitudes
+    ) {
         float negativeInfinity = -96.f;
         float ref_power = 1e-6;
-        float noiseFloor = 1e-4;
         int bufferSize = buffer.getNumSamples();
 
         std::vector<float> stftWindow(fftSize);
@@ -27,9 +31,9 @@ public:
         auto S_dh = stft(buffer, fftSize, getDerivativeWindow(fftSize, stftWindow));
         auto S_th = stft(buffer, fftSize, getTimeWeightedWindow(fftSize, stftWindow));
 
-        std::vector<std::vector<float>> magnitudes(S_h.size(), std::vector<float>(S_h[0].size(), 0.0f));
-        std::vector<std::vector<float>> frequencies(S_h.size(), std::vector<float>(S_h[0].size(), 0.0f));
-        std::vector<std::vector<float>> times(S_h.size(), std::vector<float>(S_h[0].size(), 0.0f));
+        magnitudes.resize(S_h.size(), std::vector<float>(S_h[0].size(), 0.0f));
+        frequencies.resize(S_h.size(), std::vector<float>(S_h[0].size(), 0.0f));
+        times.resize(S_h.size(), std::vector<float>(S_h[0].size(), 0.0f));
 
         float numSTFTs = S_h.size();
         float currentFrequency = 0;
@@ -38,34 +42,27 @@ public:
         float frequencyCorrection = 0;
         float timeCorrection = 0;
         float magnitude = 0;
-        float currentTime = 0;
+        float stftStartTimeSeconds = 0;
         float fftBinSize = sampleRate / fftSize;
         float pi = 3.14159265358979;
         float totalTimeSeconds = bufferSize / sampleRate;
         float normalizedTimeStep = totalTimeSeconds / numSTFTs;
 
         for (int i = 0; i < numSTFTs; i++) {
-            currentTime = i * normalizedTimeStep;
+            stftStartTimeSeconds = i * normalizedTimeStep;
 
             for (int j = 0; j < S_h[0].size(); j++) {
                 currentFrequency = (j * fftBinSize);
                 magnitude = std::abs(S_h[i][j]);
 
-                if (magnitude < noiseFloor) {
-                    continue;
-                }
-                
                 frequencyCorrection = -(std::imag(S_dh[i][j] / S_h[i][j])) * 0.5 * sampleRate / pi;
                 timeCorrection = std::real(S_th[i][j] / S_h[i][j]) / sampleRate;
 
-                times[i][j] = currentTime + timeCorrection;
-                frequencies[i][j] = currentFrequency + frequencyCorrection;
-                magnitudes[i][j] = magnitude;
+                times[i][j] = stftStartTimeSeconds + timeCorrection; // in seconds
+                frequencies[i][j] = currentFrequency + frequencyCorrection; // in Hz
+                magnitudes[i][j] = magnitude; // in Gain
             }
         }
-
-        const float maxTimeSeconds = bufferSize / sampleRate;
-        drawSpectrogram(spectrogramImage, magnitudes, times, frequencies, maxTimeSeconds);
     }
 
     void drawSpectrogram(

@@ -27,12 +27,18 @@ public:
     void resized() override;
 
 private:
-    juce::Image spectrogramImage;
+    float sampleRate = 48000.f;
+    float refreshRateHz = 60;
+    int fftSize = 2048;
     int spectrogramImagePos = 0;
-    juce::dsp::FFT forwardFFT;
-    juce::dsp::WindowingFunction<float> window;
+    int spectrogramProcessingSize = 2048;
+
+    std::vector<std::vector<float>> times;
+    std::vector<std::vector<float>> frequencies;
+    std::vector<std::vector<float>> magnitudes;
+    juce::Image spectrogramImage;
     SpectrogramVSTAudioProcessor& audioProcessor;
-    juce::AudioBuffer<float> monoBuffer;
+    juce::AudioBuffer<float> spectrogramBuffer;
 
     float findMaximum(const std::vector<float>& data, int size)
     {
@@ -62,14 +68,15 @@ private:
         }
     }
 
-    void drawNextFrameOfSpectrogramReassigned(
-        std::vector<float>& deltaTime,
-        std::vector<float>& frequencyBins,
-        std::vector<float>& magnitudes
-    ) {
+    void updateSpectrogram() {
         // Define the height and width of the spectrogram image
         int spectrogramHeight = spectrogramImage.getHeight();
         int spectrogramWidth = spectrogramImage.getWidth();
+
+        // Spectrogram image position = (# pixels)
+        // Times (seconds)
+        // Frequency (Hz)
+        // Magnitude (raw gain), eventually decibels
 
         // Clear the current column
         for (int y = 0; y < spectrogramHeight; ++y) {
@@ -78,34 +85,38 @@ private:
 
         // Define the min and max frequencies for the log scale
         float minFrequency = 20.0f;  // Minimum frequency to display
-        float maxFrequency = 24000.0f; // Nyquist frequency (half the sample rate)
+        float maxFrequency = sampleRate / 2; // Nyquist frequency
 
-        for (int i = 0; i < deltaTime.size(); ++i) {
-            // Calculate the x and y positions in the spectrogram image
-            float reassignedTime = (spectrogramImagePos + (int)deltaTime[i]) % spectrogramWidth;
-            if (reassignedTime < 0) {
-                reassignedTime += spectrogramWidth;
+        // Find the minimum and maximum magnitude values for normalization
+        float minMagnitude = 0;
+        float maxMagnitude = 8;
+        float maxTimeSeconds = spectrogramWidth * (1 / refreshRateHz);
+
+        /*
+        for (int i = 0; i < magnitudes.size(); i++) {
+            for (int j = 0; j < magnitudes[i].size(); j++) {
+                if (magnitudes[i][j] > maxMagnitude && magnitudes[i][j] < 1e4) maxMagnitude = magnitudes[i][j];
             }
+        }
+        */
 
-            float reassignedFrequency = frequencyBins[i];
-            float magnitude = magnitudes[i];
+        for (int i = 0; i < magnitudes.size(); i++)
+        {
+            for (int j = 0; j < magnitudes[i].size(); j++)
+            {
+                int x = spectrogramImagePos + (1 - (times[i][j] / maxTimeSeconds)) * spectrogramWidth;
+                x %= spectrogramWidth;
 
-            // Logarithmic mapping of the frequency
-            float logFrequency = std::log10(reassignedFrequency / minFrequency + 1);
-            float logMaxFrequency = std::log10(maxFrequency / minFrequency + 1);
+                float logFrequency = std::log10(frequencies[i][j] / 20.0f); // 20 Hz is the lowest frequency of interest
+                float maxLogFrequency = std::log10((float)sampleRate / 2.0f / 20.0f);
+                int y = juce::jmap<float>(logFrequency, 0.0f, maxLogFrequency, (float)spectrogramHeight, 0.0f);
 
-            // Normalize the log-mapped frequency to the spectrogram dimensions
-
-            // Ensure the indices are within bounds
-            int x = static_cast<int>(reassignedTime);
-            int y = spectrogramHeight - i;
-
-            if (x >= 0 && x < spectrogramWidth && y >= 0 && y < spectrogramHeight) {
-                // Calculate the color intensity based on the magnitude
-                juce::Colour colour = juce::Colour::fromHSV(0.0f, 0.0f, magnitude, 1.0f);
-
-                // Set the pixel at the calculated position
-                spectrogramImage.setPixelAt(x, y, colour);
+                if (x >= 0 && x < spectrogramWidth && y >= 0 && y < spectrogramHeight)
+                {
+                    float magnitude = magnitudes[i][j];
+                    float normalizedMagnitude = juce::jmap<float>(magnitude, minMagnitude, maxMagnitude, 0.0f, 1.0f);
+                    spectrogramImage.setPixelAt(x, y, juce::Colour::greyLevel(normalizedMagnitude));
+                }
             }
         }
 
@@ -136,7 +147,21 @@ private:
 
     void timerCallback() override
     {
-        audioProcessor.fftDataGenerator.reassignedSpectrogram(spectrogramImage, audioProcessor.longAudioBuffer);
+        int longBufferSize = audioProcessor.longAudioBuffer.getNumSamples();
+
+        if (longBufferSize > spectrogramProcessingSize) {
+            // Put the new data into the buffer
+            juce::FloatVectorOperations::copy(
+                spectrogramBuffer.getWritePointer(0, 0), // destination
+                audioProcessor.longAudioBuffer.getReadPointer(0, longBufferSize - spectrogramProcessingSize), // source
+                spectrogramProcessingSize // size
+            );
+
+            // Do the FFT on the latest audio data
+            audioProcessor.fftDataGenerator.reassignedSpectrogram(spectrogramBuffer, fftSize, times, frequencies, magnitudes);
+        }
+        
+        updateSpectrogram();
         repaint();
     }
 
