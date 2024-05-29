@@ -19,9 +19,9 @@ The source code can be cloned built with [Projucer](https://juce.com/) in your f
 - [X] Use a log scale to display the spectrogram
 - [X] Use the reassignment equations to redistribute the energy of the original FFT
 - [ ] Fix a critical DAW crashing bug related to FFT size and buffer reading out-of-bounds
-- [ ] Add de-speckling
 
 ## Nice to have
+- [ ] Add de-speckling
 - [ ] Add FFT size dropdown
 - [ ] Resizable screen
 - [ ] Hover to view frequency and note name
