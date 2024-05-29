@@ -1,6 +1,6 @@
 # Context / Background
 - I was inspired by this [video](https://www.youtube.com/watch?v=8J4LE9UpxYU) from Au5 (Austin) which talks about Spectrograms and the problems with FFT resolution in the low end. Austin goes on to talk about the [Spectral Reassignment method](https://arxiv.org/pdf/0903.3080) which outlines the math and equations for reassigning the energy of the frequency bands closer to the center of mass.
-- (This 2016 paper](https://ltfat.org/notes/ltfatnote044.pdf) explains how to do it in a real-time case
+- [This 2016 paper](https://ltfat.org/notes/ltfatnote044.pdf) explains how to do it in a real-time case
 - [Librosa](https://librosa.org/doc/latest/generated/librosa.reassigned_spectrogram.html#librosa.reassigned_spectrogram) is a Python library for audio processing that implements reassigned spectrograms
 - I'm doing this becuase I want more C++ and desktop app development experience under my belt.
 
