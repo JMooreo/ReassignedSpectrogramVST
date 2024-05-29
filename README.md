@@ -18,7 +18,7 @@ The source code can be cloned built with [Projucer](https://juce.com/) in your f
 - [X] Take at least one channel of input and draw a spectrogram on the screen
 - [X] Use a log scale to display the spectrogram
 - [X] Use the reassignment equations to redistribute the energy of the original FFT
-- [ ] Fix a critical DAW crashing bug related to FFT size and buffer reading out-of-bounds
+- [ ] It builds and runs in a DAW like Ableton
 
 ## Nice to have
 - [ ] Add de-speckling
