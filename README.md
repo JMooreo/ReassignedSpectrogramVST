@@ -1,6 +1,7 @@
 # Context
 I was inspired by this [video](https://www.youtube.com/watch?v=8J4LE9UpxYU) from Au5 (Austin) which talks about Spectrograms and the problems with FFT resolution in the low end.
 Austin goes on to talk about the [Spectral Reassignment method](https://arxiv.org/pdf/0903.3080) which outlines the math and equations for reassigning the energy of the frequency bands closer to the center of mass.
+I also picked up this project because I wanted to have more C++ and desktop app development experienceunder my belt.
 
 # Why it matters
 As an EDM producer myself, I have always struggled with this problem with spectrograms. The trade-off between time and frequency resolution has been solved (since 2009!) but lots of industry-level, $100+ plugins still only provide basic FFT spectrograms which don't really help visualize spectral information.
