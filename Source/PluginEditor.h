@@ -26,6 +26,7 @@ private:
     float sampleRate = 48000;
     float refreshRateHz = 60;
     int spectrogramImagePos = 0;
+    int scrollSpeed = 2;
     int spectrogramProcessingSize = 2048;
     std::vector<std::vector<float>> times;
     std::vector<std::vector<float>> frequencies;
@@ -83,7 +84,7 @@ private:
 
         // Find the minimum and maximum magnitude values for normalization
         float minMagnitude = 0;
-        float maxMagnitude = 8;
+        float maxMagnitude = 4;
         float maxTimeSeconds = spectrogramWidth * (1 / refreshRateHz);
 
         /*
@@ -93,6 +94,13 @@ private:
             }
         }
         */
+
+        // Clear out all the pixels
+        for (int i = 0; i < spectrogramHeight; i++) {
+            for (int j = 0; j < scrollSpeed; j++) {
+                spectrogramImage.setPixelAt(spectrogramImagePos - j, i, juce::Colour::greyLevel(0));
+            }
+        }
 
         for (int i = 0; i < magnitudes.size(); i++)
         {
@@ -109,13 +117,18 @@ private:
                 {
                     float magnitude = magnitudes[i][j];
                     float normalizedMagnitude = juce::jmap<float>(magnitude, minMagnitude, maxMagnitude, 0.0f, 1.0f);
-                    spectrogramImage.setPixelAt(x, y, juce::Colour::greyLevel(normalizedMagnitude));
+                    
+                    for (int i = 0; i < scrollSpeed; i++) {
+                        spectrogramImage.setPixelAt(x - i, y, juce::Colour::greyLevel(normalizedMagnitude));
+                    }
                 }
             }
         }
 
-        // Update the position for the next frame
-        if (++spectrogramImagePos >= spectrogramWidth) {
+        // Update the position for the next 
+        spectrogramImagePos += scrollSpeed;
+
+        if (spectrogramImagePos >= spectrogramWidth) {
             spectrogramImagePos = 0;
         }
     }

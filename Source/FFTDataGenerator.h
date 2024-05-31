@@ -1,6 +1,4 @@
 #pragma once
-#include "juce_dsp/juce_dsp.h"
-#include <cmath>
 
 enum FFTOrder
 {
@@ -54,19 +52,17 @@ public:
         }
 
         float currentFrequency = 0;
-        float correctedTime = 0;
-        float correctedFrequency = 0;
         float frequencyCorrection = 0;
         float timeCorrection = 0;
         float magnitude = 0;
-        float stftStartTimeSeconds = 0;
+        float currentTime = 0;
         float fftBinSize = (float)sampleRate / (float)fftSize;
         float pi = 3.14159265358979;
         float totalTimeSeconds = bufferSize / sampleRate;
         float normalizedTimeStep = totalTimeSeconds / (float)numFrames;
 
         for (int timeIndex = 0; timeIndex < numFrames; timeIndex++) {
-            stftStartTimeSeconds = timeIndex * normalizedTimeStep;
+            currentTime = (timeIndex * normalizedTimeStep) - totalTimeSeconds;
 
             for (int frequencyBin = 0; frequencyBin < spectrumHann[0].size(); frequencyBin++) {
                 currentFrequency = (frequencyBin * fftBinSize);
@@ -75,7 +71,7 @@ public:
                 frequencyCorrection = -(std::imag(spectrumHannDerivative[timeIndex][frequencyBin] / spectrumHann[timeIndex][frequencyBin])) * 0.5 * sampleRate / pi;
                 timeCorrection = std::real(spectumHannTimeWeighted[timeIndex][frequencyBin] / spectrumHann[timeIndex][frequencyBin]) / sampleRate;
 
-                times[timeIndex][frequencyBin] = stftStartTimeSeconds + timeCorrection; // in seconds
+                times[timeIndex][frequencyBin] = currentTime + timeCorrection; // in seconds
                 frequencies[timeIndex][frequencyBin] = currentFrequency + frequencyCorrection; // in Hz
                 magnitudes[timeIndex][frequencyBin] = magnitude; // in Gain
             }
