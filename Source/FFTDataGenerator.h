@@ -89,7 +89,7 @@ public:
         // The center should be 0. If the size is even, then split the middle.
         for (int time = -halfWidth; time < halfWidth; time++) {
             index = time + halfWidth;
-            timeWeightedWindow[index] *= standardWindow[index] * (time + 0.5);
+            timeWeightedWindow[index] = standardWindow[index] * (time + 0.5);
         }
     }
 
