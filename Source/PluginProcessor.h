@@ -9,8 +9,6 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "Fifo.h"
-#include "SingleChannelSampleFifo.h"
 #include "Channel.h"
 #include "ChainSettings.h"
 #include "FFTDataGenerator.h"

@@ -61,25 +61,4 @@
       </OUTPUTS>
     </LAYOUT>
   </FILTER>
-  <FILTER uid="5" x="0.6075" y="0.5" useARA="0" uiLastX_Normal="154" uiLastY_Normal="608"
-          uiopen_Normal="1">
-    <PLUGIN name="SpectrogramVST" format="VST3" category="Fx" manufacturer="yourcompany"
-            version="1.0.0" file="D:\JUCE\projects\NewProject\SpectrogramVST\Builds\VisualStudio2022\x64\Debug\VST3\SpectrogramVST.vst3\Contents\x86_64-win\SpectrogramVST.vst3"
-            uniqueId="f296e11f" isInstrument="0" fileTime="18fa79a6577" infoUpdateTime="18fa7a0ec01"
-            numInputs="2" numOutputs="2" isShell="0" hasARAExtension="0"
-            uid="e953545d"/>
-    <STATE>390.VMjLgzW....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9HCL33BTEwlXmAiUYoWUrIVdA4hKAwjKTETRUAUSAAkKBolQY4BQlITQXoVTTEDdT81aWkkKXcEVxU0UY4BQPIDQt3hKt3hKt3hKt3hKtTETRUDUS4BQl4xaQYjKA4RTAgzZwjkaAgVT3UkUhASUrEVZqcjKwTjQgASUF4RPp4RPt3hKt3hKtf1TCQjKPUjZTEDLD4RPHAkVpEDTt7DUtLUcicDRFkzUYcWUWkEcMYEYtf0UXIWUWkkKDAkPD4hKt3hKt3hKPMDTt3hKt3hKt3hKt3hKJUELPUTPqI1aYcEV5UkQQcVTWgkKDAkKBs1QhcVSxHlKDAkKC4BTG4hKt3hKt3hKt3FUUMTUDQEdqw1XmE0UYQTQFM1YAwyKIMzasA2atUlaz4COuX0TTMCTrU2Yo41TzEFck4C.</STATE>
-    <LAYOUT>
-      <INPUTS>
-        <BUS index="0" layout="L R"/>
-      </INPUTS>
-      <OUTPUTS>
-        <BUS index="0" layout="L R"/>
-      </OUTPUTS>
-    </LAYOUT>
-  </FILTER>
-  <CONNECTION srcFilter="1" srcChannel="0" dstFilter="5" dstChannel="0"/>
-  <CONNECTION srcFilter="1" srcChannel="0" dstFilter="5" dstChannel="1"/>
-  <CONNECTION srcFilter="5" srcChannel="0" dstFilter="3" dstChannel="0"/>
-  <CONNECTION srcFilter="5" srcChannel="1" dstFilter="3" dstChannel="1"/>
 </FILTERGRAPH>

@@ -8,8 +8,6 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "Fifo.h"
-#include "SingleChannelSampleFifo.h"
 #include "Channel.h"
 #include "ChainSettings.h"
 
@@ -159,11 +157,11 @@ bool SpectrogramVSTAudioProcessor::isBusesLayoutSupported (const BusesLayout& la
 
 void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    juce::dsp::AudioBlock<float> block(buffer);
+    //juce::dsp::AudioBlock<float> block(buffer);
 
     //buffer.clear();
 
-    juce::dsp::ProcessContextReplacing<float> stereoContext(block);
+    //juce::dsp::ProcessContextReplacing<float> stereoContext(block);
     //osc.process(stereoContext);
     //gain.process(stereoContext);
 

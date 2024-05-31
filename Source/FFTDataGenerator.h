@@ -25,7 +25,7 @@ public:
         int bufferSize = buffer.getNumSamples();
 
         std::vector<float> stftWindow(fftSize);
-        juce::dsp::WindowingFunction<float>::fillWindowingTables(stftWindow.data(), fftSize, juce::dsp::WindowingFunction<float>::blackmanHarris, false);
+        juce::dsp::WindowingFunction<float>::fillWindowingTables(stftWindow.data(), fftSize, juce::dsp::WindowingFunction<float>::hann, false);
 
         auto S_h = stft(buffer, fftSize, stftWindow);
         auto S_dh = stft(buffer, fftSize, getDerivativeWindow(fftSize, stftWindow));

@@ -8,9 +8,6 @@
             file="Source/FFTDataGenerator.h"/>
       <FILE id="o0whF1" name="ChainSettings.h" compile="0" resource="0" file="Source/ChainSettings.h"/>
       <FILE id="Vo2msU" name="Channel.h" compile="0" resource="0" file="Source/Channel.h"/>
-      <FILE id="pYBuJG" name="SingleChannelSampleFifo.h" compile="0" resource="0"
-            file="Source/SingleChannelSampleFifo.h"/>
-      <FILE id="g53idv" name="Fifo.h" compile="0" resource="0" file="Source/Fifo.h"/>
       <FILE id="vpVa6i" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="ndFAwP" name="PluginProcessor.h" compile="0" resource="0"
