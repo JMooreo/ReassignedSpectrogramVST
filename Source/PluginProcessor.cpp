@@ -8,8 +8,6 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "Channel.h"
-#include "ChainSettings.h"
 
 //==============================================================================
 SpectrogramVSTAudioProcessor::SpectrogramVSTAudioProcessor()
