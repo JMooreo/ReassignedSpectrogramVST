@@ -17,6 +17,14 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
     setSize(512, 512);
     startTimerHz(refreshRateHz);
     spectrogramBuffer.setSize(1, spectrogramProcessingSize);
+
+    // Calculate the number of frames and the size of each inner vector
+    size_t numFrames = (spectrogramProcessingSize / (audioProcessor.fftDataGenerator.fftSize / 2)) + 1;
+    size_t innerVectorSize = (audioProcessor.fftDataGenerator.fftSize / 2) + 1;
+
+    magnitudes.resize(numFrames, std::vector<float>(innerVectorSize, 0.0f));
+    frequencies.resize(numFrames, std::vector<float>(innerVectorSize, 0.0f));
+    times.resize(numFrames, std::vector<float>(innerVectorSize, 0.0f));
 }
 
 SpectrogramVSTAudioProcessorEditor::~SpectrogramVSTAudioProcessorEditor()

@@ -23,12 +23,10 @@ public:
     void resized() override;
 
 private:
-    float sampleRate = 48000.f;
+    float sampleRate = 48000;
     float refreshRateHz = 60;
-    int fftSize = 2048;
     int spectrogramImagePos = 0;
     int spectrogramProcessingSize = 2048;
-
     std::vector<std::vector<float>> times;
     std::vector<std::vector<float>> frequencies;
     std::vector<std::vector<float>> magnitudes;
@@ -80,7 +78,7 @@ private:
         }
 
         // Define the min and max frequencies for the log scale
-        float minFrequency = 20.0f;  // Minimum frequency to display
+        float minFrequency = 20.f;  // Minimum frequency to display
         float maxFrequency = sampleRate / 2; // Nyquist frequency
 
         // Find the minimum and maximum magnitude values for normalization
@@ -122,25 +120,6 @@ private:
         }
     }
 
-    void drawNextFrameOfSpectrogram(std::vector<float> normalizedMagnitudes, int fftSize)
-    {
-        auto maxLevel = 1.f;
-
-        auto height = spectrogramImage.getHeight();
-
-        for (int i = 0; i < height; i++)
-        {
-            auto level = normalizedMagnitudes[i] - 0.5;
-            spectrogramImage.setPixelAt(spectrogramImagePos, height - i, getColorForLevel(level));
-        }
-
-        // Update the spectrogram image position
-        if (++spectrogramImagePos >= spectrogramImage.getWidth())
-        {
-            spectrogramImagePos = 0;
-        }
-    }
-
     void timerCallback() override
     {
         int longBufferSize = audioProcessor.longAudioBuffer.getNumSamples();
@@ -153,8 +132,8 @@ private:
                 spectrogramProcessingSize // size
             );
 
-            // Do the FFT on the latest audio data
-            audioProcessor.fftDataGenerator.reassignedSpectrogram(spectrogramBuffer, fftSize, times, frequencies, magnitudes);
+            // Put reassigned spectogram data into the buffers
+            audioProcessor.fftDataGenerator.reassignedSpectrogram(spectrogramBuffer, times, frequencies, magnitudes);
         }
         
         updateSpectrogram();

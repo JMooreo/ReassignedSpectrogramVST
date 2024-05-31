@@ -14,14 +14,16 @@
 //==============================================================================
 SpectrogramVSTAudioProcessor::SpectrogramVSTAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
+     : 
+        AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+        fftDataGenerator(2048, 48000)
 #endif
 {
 }
@@ -92,15 +94,6 @@ void SpectrogramVSTAudioProcessor::changeProgramName (int index, const juce::Str
 {
 }
 
-void SpectrogramVSTAudioProcessor::updateSettings()
-{
-    //auto chainSettings = getChainSettings(apvts);
-
-    //updateLowCutFilters(chainSettings);
-    //updatePeakFilter(chainSettings);
-    //updateHighCutFilters(chainSettings);
-}
-
 //==============================================================================
 void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
@@ -109,8 +102,6 @@ void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samples
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = 2;
     spec.sampleRate = sampleRate;
-
-    // updateSettings()
 
     longAudioBuffer.setSize(2, 10000); // Save some number of blocks in a long buffer.
 
