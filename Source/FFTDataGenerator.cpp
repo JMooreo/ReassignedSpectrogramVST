@@ -9,14 +9,10 @@ FFTDataGenerator::FFTDataGenerator(int _fftSize, int _sampleRate):
     timeWeightedWindow(_fftSize, 0.0f),
     sampleRate(_sampleRate)
 {
-    std::cout << "FFTDataGenerator constructor" << std::endl;
-
     updateFFTSize(_fftSize);
 }
 
 void FFTDataGenerator::updateFFTSize(int size) {
-    std::cout << "FFTDataGenerator updateFFTSize" << std::endl;
-
     fftSize = size;
     juce::dsp::WindowingFunction<float>::fillWindowingTables(standardWindow.data(), size, juce::dsp::WindowingFunction<float>::hann, false);
     fft = juce::dsp::FFT(std::log2(size));
@@ -30,8 +26,6 @@ void FFTDataGenerator::reassignedSpectrogram(
     std::vector<std::vector<float>>& frequencies,
     std::vector<std::vector<float>>& magnitudes
 ) {
-    std::cout << "FFTDataGenerator reassignedSpectrogram" << std::endl;
-
     int bufferSize = buffer.getNumSamples();
     auto spectrumHann = stft(buffer, standardWindow);
     auto spectrumHannDerivative = stft(buffer, derivativeWindow);
@@ -45,11 +39,6 @@ void FFTDataGenerator::reassignedSpectrogram(
 
     ensureEnoughVectorSpace(spectrumHann, times, frequencies, magnitudes);
 
-    jassert(numFrames > 0);
-    jassert(sampleRate > 0);
-    jassert(fftSize > 0);
-    jassert(bufferSize > 0);
-
     float currentFrequency = 0.f;
     float frequencyCorrection = 0.f;
     float timeCorrection = 0.f;
@@ -60,8 +49,6 @@ void FFTDataGenerator::reassignedSpectrogram(
     float totalTimeSeconds = (float)bufferSize / (float)sampleRate;
     float normalizedTimeStep = (float)totalTimeSeconds / (float)numFrames;
     std::complex<float> demonimator;
-
-    std::cout << "FFTDataGenerator created variables" << std::endl;
 
     for (int timeIndex = 0; timeIndex < numFrames; timeIndex++) {
         currentTime = (timeIndex * normalizedTimeStep) - totalTimeSeconds;
@@ -116,7 +103,6 @@ void FFTDataGenerator::ensureEnoughVectorSpace(
 }
 
 void FFTDataGenerator::updateTimeWeightedWindow() {
-    std::cout << "FFTDataGenerator update time weighted window" << std::endl;
     int halfWidth = fftSize / 2;
     int index = 0;
 
@@ -128,8 +114,6 @@ void FFTDataGenerator::updateTimeWeightedWindow() {
 }
 
 void FFTDataGenerator::updateDerivativeWindow() {
-    std::cout << "FFTDataGenerator update derivative window" << std::endl;
-
     int previousIndex = 0;
     int nextIndex = 0;
 
@@ -142,11 +126,7 @@ void FFTDataGenerator::updateDerivativeWindow() {
 }
 
 std::vector<std::vector<std::complex<float>>> FFTDataGenerator::stft(const juce::AudioBuffer<float>& inputBuffer, std::vector<float>& window) {
-    std::cout << "FFTDataGenerator stft" << std::endl;
     int hopLength = fftSize / 4;
-
-    jassert(hopLength > 0);
-
     int numFrames = (inputBuffer.getNumSamples() - fftSize) / hopLength + 1;
     int numOutputChannels = inputBuffer.getNumChannels();
 

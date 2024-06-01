@@ -95,7 +95,6 @@ void SpectrogramVSTAudioProcessor::changeProgramName (int index, const juce::Str
 //==============================================================================
 void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    std::cout << "SpectrogramVSTAudioProcessor prepare to play" << std::endl;
     longAudioBuffer.setSize(2, 8192);
 }
 
@@ -133,13 +132,11 @@ bool SpectrogramVSTAudioProcessor::isBusesLayoutSupported (const BusesLayout& la
 
 void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    std::cout << "SpectrogramVSTAudioProcessor process block" << std::endl;
     pushIntoLongBuffer(buffer);
 }
 
 void SpectrogramVSTAudioProcessor::pushIntoLongBuffer(juce::AudioBuffer<float>& buffer) {
     int size = buffer.getNumSamples();
-    std::cout << "SpectrogramVSTAudioProcessor push into long buffer" << std::endl;
 
     for (int channel = 0; channel < 2; channel++) {
         // Move the existing data back by the size of the new buffer

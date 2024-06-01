@@ -46,10 +46,6 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
     int spectrogramHeight = spectrogramImage.getHeight();
     int spectrogramWidth = spectrogramImage.getWidth();
 
-    jassert(spectrogramHeight > 0);
-    jassert(spectrogramWidth > 0);
-    jassert(refreshRateHz > 0);
-
     if (spectrogramHeight == 0 || spectrogramWidth == 0) {
         return;
     }
@@ -72,9 +68,6 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
     float minMagnitude = 0.f;
     float maxMagnitude = 4.f;
     float maxTimeSeconds = (float)spectrogramWidth * (1 / (float)refreshRateHz);
-
-    jassert(maxTimeSeconds > 0);
-
 
     /*
     for (int i = 0; i < magnitudes.size(); i++) {
@@ -187,8 +180,6 @@ juce::Colour SpectrogramVSTAudioProcessorEditor::interpolateColor(float t, juce:
 
 void SpectrogramVSTAudioProcessorEditor::resized()
 {
-    std::cout << "SpectrogramVSTProcessorEditor resized" << std::endl;
-
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
 }
