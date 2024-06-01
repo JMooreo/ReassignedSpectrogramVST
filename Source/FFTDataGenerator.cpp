@@ -56,14 +56,11 @@ void FFTDataGenerator::reassignedSpectrogram(
         for (int frequencyBin = 0; frequencyBin < spectrumHann[0].size(); frequencyBin++) {
             currentFrequency = frequencyBin * fftBinSize;
             magnitude = std::abs(spectrumHann[timeIndex][frequencyBin]);
-
             demonimator = spectrumHann[timeIndex][frequencyBin];
             
             if (std::real(demonimator) == 0 || std::imag(demonimator) == 0) {
                 continue;
             }
-
-            jassert(std::abs(demonimator) > 0);
 
             frequencyCorrection = -(std::imag(spectrumHannDerivative[timeIndex][frequencyBin] / demonimator)) * 0.5 * sampleRate / pi;
             timeCorrection = std::real(spectumHannTimeWeighted[timeIndex][frequencyBin] / demonimator) / sampleRate;
@@ -93,7 +90,8 @@ void FFTDataGenerator::ensureEnoughVectorSpace(
     std::vector<std::vector<float>>& frequencies,
     std::vector<std::vector<float>>& magnitudes
 ) {
-    // Calculate the number of frames and the size of each inner vector
+    // Calculate the number of frames and the size of each inner vector.
+    // Since we're always using the same buffer size to the STFTs, actual allocations should really only happen once or twice.
     size_t numRows = fftResult.size();
     size_t numColumns = fftResult[0].size();
 

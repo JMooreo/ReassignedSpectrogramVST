@@ -14,13 +14,11 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
     :   AudioProcessorEditor(&p),
         audioProcessor(p),
         sampleRate(48000),
-        refreshRateHz(60),
+        refreshRateHz(120),
         spectrogramProcessingSize(2048),
         scrollSpeed(1),
         spectrogramImagePos(0)
 {
-    std::cout << "SpectrogramVSTProcessorEditor constructor" << std::endl;
-
     setSize(512, 512);
     startTimerHz(refreshRateHz);
     spectrogramBuffer.setSize(1, spectrogramProcessingSize);
@@ -33,8 +31,6 @@ SpectrogramVSTAudioProcessorEditor::~SpectrogramVSTAudioProcessorEditor()
 //==============================================================================
 void SpectrogramVSTAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    std::cout << "SpectrogramVSTProcessorEditor paint" << std::endl;
-
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll(juce::Colours::black);
     auto area = getLocalBounds();
@@ -56,9 +52,6 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
     // Magnitude (raw gain), eventually decibels
 
     // Clear the current column
-    for (int y = 0; y < spectrogramHeight; ++y) {
-        spectrogramImage.setPixelAt(spectrogramImagePos, y, juce::Colours::black);
-    }
 
     // Define the min and max frequencies for the log scale
     float minFrequency = 20.f;  // Minimum frequency to display
@@ -66,34 +59,20 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
 
     // Find the minimum and maximum magnitude values for normalization
     float minMagnitude = 0.f;
-    float maxMagnitude = 4.f;
+    float maxMagnitude = 8.f;
     float maxTimeSeconds = (float)spectrogramWidth * (1 / (float)refreshRateHz);
 
-    /*
+    // Clear out the old pixels
+    for (int y = 0; y < spectrogramHeight; y++) {
+        for (int duplicateIndex = 0; duplicateIndex < scrollSpeed; duplicateIndex++) {
+            // I'm not sure why we have to add an offset of +5. 
+            // It may have something to do with the reassigned data being shifted incorrectly.
+            int x = (spectrogramImagePos - duplicateIndex + 5) % spectrogramWidth; 
+            spectrogramImage.setPixelAt(x, y, juce::Colour::greyLevel(0));
+        }
+    }
+
     for (int i = 0; i < magnitudes.size(); i++) {
-        for (int j = 0; j < magnitudes[i].size(); j++) {
-            if (magnitudes[i][j] > maxMagnitude && magnitudes[i][j] < 1e4) maxMagnitude = magnitudes[i][j];
-        }
-    }
-    */
-
-    // Clear out all the pixels
-    for (int i = 0; i < spectrogramHeight; i++) {
-        for (int j = 0; j < scrollSpeed; j++) {
-            spectrogramImage.setPixelAt(spectrogramImagePos - j, i, juce::Colour::greyLevel(0));
-        }
-    }
-
-    if (magnitudes.size() == 0) {
-        return;
-    }
-
-    for (int i = 0; i < magnitudes.size(); i++)
-    {
-        if (magnitudes[i].size() == 0) {
-            continue;
-        }
-
         for (int j = 0; j < magnitudes[i].size(); j++)
         {
             int x = spectrogramImagePos + (1 - (times[i][j] / maxTimeSeconds)) * spectrogramWidth;
@@ -108,9 +87,7 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
                 float magnitude = magnitudes[i][j];
                 float normalizedMagnitude = juce::jmap<float>(magnitude, minMagnitude, maxMagnitude, 0.0f, 1.0f);
 
-                for (int i = 0; i < scrollSpeed; i++) {
-                    spectrogramImage.setPixelAt(x - i, y, getColorForLevel(normalizedMagnitude));
-                }
+                spectrogramImage.setPixelAt(x - i, y, getColorForLevel(normalizedMagnitude));
             }
         }
     }
