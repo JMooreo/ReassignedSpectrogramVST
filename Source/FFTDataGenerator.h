@@ -34,6 +34,15 @@ public:
         std::vector<float>& window
     );
 
+    void ensureEnoughVectorSpace(
+        std::vector<std::vector<std::complex<float>>>& fftResult,
+        std::vector<std::vector<float>>& times,
+        std::vector<std::vector<float>>& frequencies,
+        std::vector<std::vector<float>>& magnitudes
+    );
+
+    void resize2dVectorIfNeeded(std::vector<std::vector<float>>& vector, int numRows, int numColumns);
+
 private:
     int sampleRate;
     std::vector<float> standardWindow;

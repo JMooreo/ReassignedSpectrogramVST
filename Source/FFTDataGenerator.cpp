@@ -37,26 +37,28 @@ void FFTDataGenerator::reassignedSpectrogram(
     auto spectrumHannDerivative = stft(buffer, derivativeWindow);
     auto spectumHannTimeWeighted = stft(buffer, timeWeightedWindow);
     int hopLength = fftSize / 4;
-    int numFrames = (bufferSize - fftSize) / hopLength + 1;
+    int numFrames = spectrumHann.size();
 
-    if (numFrames == 0 || sampleRate == 0 || fftSize == 0 || bufferSize == 0) {
+    if (numFrames == 0) {
         return;
     }
+
+    ensureEnoughVectorSpace(spectrumHann, times, frequencies, magnitudes);
 
     jassert(numFrames > 0);
     jassert(sampleRate > 0);
     jassert(fftSize > 0);
     jassert(bufferSize > 0);
 
-    float currentFrequency = 0;
-    float frequencyCorrection = 0;
-    float timeCorrection = 0;
-    float magnitude = 0;
-    float currentTime = 0;
+    float currentFrequency = 0.f;
+    float frequencyCorrection = 0.f;
+    float timeCorrection = 0.f;
+    float magnitude = 0.f;
+    float currentTime = 0.f;
     float fftBinSize = (float)sampleRate / (float)fftSize;
     float pi = 3.14159265358979;
-    float totalTimeSeconds = bufferSize / sampleRate;
-    float normalizedTimeStep = totalTimeSeconds / (float)numFrames;
+    float totalTimeSeconds = (float)bufferSize / (float)sampleRate;
+    float normalizedTimeStep = (float)totalTimeSeconds / (float)numFrames;
     std::complex<float> demonimator;
 
     std::cout << "FFTDataGenerator created variables" << std::endl;
@@ -70,7 +72,7 @@ void FFTDataGenerator::reassignedSpectrogram(
 
             demonimator = spectrumHann[timeIndex][frequencyBin];
             
-            if (std::abs(demonimator) == 0) {
+            if (std::real(demonimator) == 0 || std::imag(demonimator) == 0) {
                 continue;
             }
 
@@ -84,6 +86,33 @@ void FFTDataGenerator::reassignedSpectrogram(
             magnitudes[timeIndex][frequencyBin] = magnitude; // in Gain
         }
     }
+}
+
+void FFTDataGenerator::resize2dVectorIfNeeded(std::vector<std::vector<float>>& vector, int numRows, int numColumns) {
+    if (vector.size() != numRows || vector[0].size() != numColumns) {
+        vector.resize(numRows);
+
+        for (auto& vec : vector) {
+            if (vec.size() != numColumns) {
+                vec.resize(numColumns, 0.0f);
+            }
+        }
+    }
+}
+
+void FFTDataGenerator::ensureEnoughVectorSpace(
+    std::vector<std::vector<std::complex<float>>>& fftResult,
+    std::vector<std::vector<float>>& times,
+    std::vector<std::vector<float>>& frequencies,
+    std::vector<std::vector<float>>& magnitudes
+) {
+    // Calculate the number of frames and the size of each inner vector
+    size_t numRows = fftResult.size();
+    size_t numColumns = fftResult[0].size();
+
+    resize2dVectorIfNeeded(magnitudes, numRows, numColumns);
+    resize2dVectorIfNeeded(frequencies, numRows, numColumns);
+    resize2dVectorIfNeeded(times, numRows, numColumns);
 }
 
 void FFTDataGenerator::updateTimeWeightedWindow() {
