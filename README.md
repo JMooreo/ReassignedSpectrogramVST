@@ -10,16 +10,15 @@ Quality tools like this are really important for producers who literally can't h
 
 
 # Installation
-**THIS PROJECT IS STILL IN DEVELOPMENT AND IS NOT PRODUCTION READY**
-
 The source code can be cloned built with [Projucer](https://juce.com/) in your favorite IDE.
+I plan to create builds for download in the future
 
 # To-do
 ## MVP
 - [X] Take at least one channel of input and draw a spectrogram on the screen
 - [X] Use a log scale to display the spectrogram
 - [X] Use the reassignment equations to redistribute the energy of the original FFT
-- [ ] It builds and runs in a DAW like Ableton
+- [X] It builds and runs in a Ableton 10 Standard
 
 ## Nice to have
 - [ ] Add de-speckling
