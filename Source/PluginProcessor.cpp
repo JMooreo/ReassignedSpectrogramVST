@@ -95,21 +95,7 @@ void SpectrogramVSTAudioProcessor::changeProgramName (int index, const juce::Str
 //==============================================================================
 void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    juce::dsp::ProcessSpec spec;
-
-    spec.maximumBlockSize = samplesPerBlock;
-    spec.numChannels = 2;
-    spec.sampleRate = sampleRate;
-
-    longAudioBuffer.setSize(2, 10000); // Save some number of blocks in a long buffer.
-
-    // Create an oscillator that will produce a test frequency for us.
-    osc.initialise([](float x) { return std::sin(x); });
-    gain.setGainLinear(1.f);
-
-    spec.numChannels = getTotalNumOutputChannels();
-    osc.prepare(spec);
-    osc.setFrequency(40);
+    longAudioBuffer.setSize(2, 4096); // Save some number of blocks in a long buffer.
 }
 
 void SpectrogramVSTAudioProcessor::releaseResources()
@@ -146,14 +132,6 @@ bool SpectrogramVSTAudioProcessor::isBusesLayoutSupported (const BusesLayout& la
 
 void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    //juce::dsp::AudioBlock<float> block(buffer);
-
-    //buffer.clear();
-
-    //juce::dsp::ProcessContextReplacing<float> stereoContext(block);
-    //osc.process(stereoContext);
-    //gain.process(stereoContext);
-
     pushIntoLongBuffer(buffer);
 }
 
@@ -194,40 +172,11 @@ void SpectrogramVSTAudioProcessor::getStateInformation (juce::MemoryBlock& destD
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
     juce::MemoryOutputStream mos(destData, true);
-    apvts.state.writeToStream(mos);
 }
 
 void SpectrogramVSTAudioProcessor::setStateInformation (const void* data, int sizeInBytes) {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
-}
-
-juce::AudioProcessorValueTreeState::ParameterLayout SpectrogramVSTAudioProcessor::createParameterLayout() {
-    juce::AudioProcessorValueTreeState::ParameterLayout layout;
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>("Low Frequency",
-        "Low Frequency",
-        juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.25f),
-        20.f));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>("High Frequency",
-        "High Frequency",
-        juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.9f),
-        20000.f));
-
-    juce::StringArray fftOptions;
-    for (int i = 9; i < 12; i++) {
-        juce::String str;
-
-        str << (1 << i); // 2^i
-
-        fftOptions.add(str);
-    }
-
-    layout.add(std::make_unique<juce::AudioParameterChoice>("FFT Size", "FFT Size", fftOptions, 0));
-
-
-    return layout;
 }
 
 //==============================================================================

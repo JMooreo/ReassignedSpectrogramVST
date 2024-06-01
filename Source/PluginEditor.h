@@ -119,7 +119,7 @@ private:
                     float normalizedMagnitude = juce::jmap<float>(magnitude, minMagnitude, maxMagnitude, 0.0f, 1.0f);
                     
                     for (int i = 0; i < scrollSpeed; i++) {
-                        spectrogramImage.setPixelAt(x - i, y, juce::Colour::greyLevel(normalizedMagnitude));
+                        spectrogramImage.setPixelAt(x - i, y, getColorForLevel(normalizedMagnitude));
                     }
                 }
             }
