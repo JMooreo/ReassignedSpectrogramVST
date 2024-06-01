@@ -26,8 +26,9 @@ private:
     float sampleRate = 48000;
     float refreshRateHz = 60;
     int spectrogramImagePos = 0;
-    int scrollSpeed = 2;
+    int scrollSpeed = 1;
     int spectrogramProcessingSize = 2048;
+    int spectralBufferRowSize;
     std::vector<std::vector<float>> times;
     std::vector<std::vector<float>> frequencies;
     std::vector<std::vector<float>> magnitudes;
@@ -35,18 +36,11 @@ private:
     SpectrogramVSTAudioProcessor& audioProcessor;
     juce::AudioBuffer<float> spectrogramBuffer;
 
-    float findMaximum(const std::vector<float>& data, int size)
-    {
-        return *std::max_element(data.begin(), data.begin() + size);
-    }
-
-    // Function to interpolate between two colors
     juce::Colour interpolateColor(float t, juce::Colour start, juce::Colour end)
     {
         return start.interpolatedWith(end, t);
     }
 
-    // Function to get the color based on the amplitude level
     juce::Colour getColorForLevel(float level)
     {
         if (level <= 0.33f)
@@ -68,6 +62,9 @@ private:
         int spectrogramHeight = spectrogramImage.getHeight();
         int spectrogramWidth = spectrogramImage.getWidth();
 
+        jassert(spectrogramHeight > 0);
+        jassert(spectrogramWidth > 0);
+        jassert(refreshRateHz > 0);
         // Spectrogram image position = (# pixels)
         // Times (seconds)
         // Frequency (Hz)
@@ -86,6 +83,9 @@ private:
         float minMagnitude = 0;
         float maxMagnitude = 4;
         float maxTimeSeconds = spectrogramWidth * (1 / refreshRateHz);
+
+        jassert(maxTimeSeconds > 0);
+
 
         /*
         for (int i = 0; i < magnitudes.size(); i++) {
