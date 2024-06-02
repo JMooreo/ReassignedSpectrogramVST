@@ -95,6 +95,17 @@ void SpectrogramVSTAudioProcessor::changeProgramName (int index, const juce::Str
 //==============================================================================
 void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    juce::dsp::ProcessSpec spec;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = 2;
+    spec.sampleRate = sampleRate;
+
+    osc.initialise([](float x) { return std::sin(x); });
+    osc.prepare(spec);
+    osc.setFrequency(40);
+
+    gain.setGainLinear(0.1f);
+
     longAudioBuffer.setSize(2, 8192);
 }
 
@@ -132,6 +143,16 @@ bool SpectrogramVSTAudioProcessor::isBusesLayoutSupported (const BusesLayout& la
 
 void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    /*
+        juce::dsp::AudioBlock<float> block(buffer);
+
+        buffer.clear();
+
+        juce::dsp::ProcessContextReplacing<float> stereoContext(block);
+        osc.process(stereoContext);
+        gain.process(stereoContext);
+    */
+
     pushIntoLongBuffer(buffer);
 }
 

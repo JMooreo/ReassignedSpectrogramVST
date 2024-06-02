@@ -14,7 +14,7 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
     :   AudioProcessorEditor(&p),
         audioProcessor(p),
         sampleRate(48000),
-        refreshRateHz(120),
+        refreshRateHz(240),
         spectrogramProcessingSize(2048),
         scrollSpeed(1),
         spectrogramImagePos(0)
@@ -58,8 +58,8 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
     float maxFrequency = (float)sampleRate / 2; // Nyquist frequency
 
     // Find the minimum and maximum magnitude values for normalization
-    float minMagnitude = 0.f;
-    float maxMagnitude = 8.f;
+    float minMagnitude = 2.f;
+    float maxMagnitude = 12.f;
     float maxTimeSeconds = (float)spectrogramWidth * (1 / (float)refreshRateHz);
 
     // Clear out the old pixels
@@ -67,7 +67,7 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
         for (int duplicateIndex = 0; duplicateIndex < scrollSpeed; duplicateIndex++) {
             // I'm not sure why we have to add an offset of +5. 
             // It may have something to do with the reassigned data being shifted incorrectly.
-            int x = (spectrogramImagePos - duplicateIndex + 5) % spectrogramWidth; 
+            int x = (spectrogramImagePos - duplicateIndex + 10) % spectrogramWidth; 
             spectrogramImage.setPixelAt(x, y, juce::Colour::greyLevel(0));
         }
     }

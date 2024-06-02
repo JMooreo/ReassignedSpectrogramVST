@@ -29,6 +29,8 @@ public:
 
     void updateDerivativeWindow();
 
+    void updateDerivativeTimeWeightedWindow();
+
     std::vector<std::vector<std::complex<float>>> stft(
         const juce::AudioBuffer<float>&inputBuffer, 
         std::vector<float>& window
@@ -43,10 +45,12 @@ public:
 
     void resize2dVectorIfNeeded(std::vector<std::vector<float>>& vector, int numRows, int numColumns);
 
+
 private:
     int sampleRate;
     std::vector<float> standardWindow;
     std::vector<float> derivativeWindow;
     std::vector<float> timeWeightedWindow;
+    std::vector<float> derivativeTimeWeightedWindow;
     juce::dsp::FFT fft;
 };
