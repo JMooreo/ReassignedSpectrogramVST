@@ -14,14 +14,12 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
     :   AudioProcessorEditor(&p),
         audioProcessor(p),
         sampleRate(48000),
-        refreshRateHz(240),
-        spectrogramProcessingSize(2048),
+        refreshRateHz(60),
         scrollSpeed(1),
         spectrogramImagePos(0)
 {
     setSize(512, 512);
     startTimerHz(refreshRateHz);
-    spectrogramBuffer.setSize(1, spectrogramProcessingSize);
 }
 
 SpectrogramVSTAudioProcessorEditor::~SpectrogramVSTAudioProcessorEditor()
@@ -58,8 +56,8 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
     float maxFrequency = (float)sampleRate / 2; // Nyquist frequency
 
     // Find the minimum and maximum magnitude values for normalization
-    float minMagnitude = 2.f;
-    float maxMagnitude = 12.f;
+    float minMagnitude = 0.f;
+    float maxMagnitude = 1.f;
     float maxTimeSeconds = (float)spectrogramWidth * (1 / (float)refreshRateHz);
 
     // Clear out the old pixels
@@ -73,22 +71,19 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
     }
 
     for (int i = 0; i < magnitudes.size(); i++) {
-        for (int j = 0; j < magnitudes[i].size(); j++)
+        int x = spectrogramImagePos + (1 - (times[i] / maxTimeSeconds)) * spectrogramWidth;
+        x %= spectrogramWidth;
+
+        float logFrequency = std::log10(frequencies[i] / 20.0f); // 20 Hz is the lowest frequency of interest
+        float maxLogFrequency = std::log10((float)sampleRate / 2.0f / 20.0f);
+        int y = juce::jmap<float>(logFrequency, 0.0f, maxLogFrequency, (float)spectrogramHeight, 0.0f);
+
+        if (x >= 0 && x < spectrogramWidth && y >= 0 && y < spectrogramHeight)
         {
-            int x = spectrogramImagePos + (1 - (times[i][j] / maxTimeSeconds)) * spectrogramWidth;
-            x %= spectrogramWidth;
+            float magnitude = magnitudes[i];
+            float normalizedMagnitude = juce::jmap<float>(magnitude, minMagnitude, maxMagnitude, 0.0f, 1.0f);
 
-            float logFrequency = std::log10(frequencies[i][j] / 20.0f); // 20 Hz is the lowest frequency of interest
-            float maxLogFrequency = std::log10((float)sampleRate / 2.0f / 20.0f);
-            int y = juce::jmap<float>(logFrequency, 0.0f, maxLogFrequency, (float)spectrogramHeight, 0.0f);
-
-            if (x >= 0 && x < spectrogramWidth && y >= 0 && y < spectrogramHeight)
-            {
-                float magnitude = magnitudes[i][j];
-                float normalizedMagnitude = juce::jmap<float>(magnitude, minMagnitude, maxMagnitude, 0.0f, 1.0f);
-
-                spectrogramImage.setPixelAt(x - i, y, getColorForLevel(normalizedMagnitude));
-            }
+            spectrogramImage.setPixelAt(x - i, y, getColorForLevel(normalizedMagnitude));
         }
     }
 
@@ -102,20 +97,7 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
 
 void SpectrogramVSTAudioProcessorEditor::timerCallback()
 {
-    int longBufferSize = audioProcessor.longAudioBuffer.getNumSamples();
-
-    if (longBufferSize > spectrogramProcessingSize) {
-        // Put the new data into the buffer
-        juce::FloatVectorOperations::copy(
-            spectrogramBuffer.getWritePointer(0, 0), // destination
-            audioProcessor.longAudioBuffer.getReadPointer(0, longBufferSize - spectrogramProcessingSize), // source
-            spectrogramProcessingSize // size
-        );
-
-        // Put reassigned spectogram data into the buffers
-        audioProcessor.fftDataGenerator.reassignedSpectrogram(spectrogramBuffer, times, frequencies, magnitudes);
-    }
-
+    audioProcessor.fftDataGenerator.reassignedSpectrogram(audioProcessor.fftBuffer, times, frequencies, magnitudes);
     updateSpectrogram();
     repaint();
 }

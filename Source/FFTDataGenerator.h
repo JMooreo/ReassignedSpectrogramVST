@@ -18,11 +18,11 @@ public:
 
     void updateFFTSize(int size);
 
-    void reassignedSpectrogram(
+    void FFTDataGenerator::reassignedSpectrogram(
         juce::AudioBuffer<float>& buffer,
-        std::vector<std::vector<float>>& times,
-        std::vector<std::vector<float>>& frequencies,
-        std::vector<std::vector<float>>& magnitudes
+        std::vector<float>& times,
+        std::vector<float>& frequencies,
+        std::vector<float>& magnitudes
     );
 
     void updateTimeWeightedWindow();
@@ -31,20 +31,12 @@ public:
 
     void updateDerivativeTimeWeightedWindow();
 
-    std::vector<std::vector<std::complex<float>>> stft(
+    std::vector<std::complex<float>> doFFT(
         const juce::AudioBuffer<float>&inputBuffer, 
         std::vector<float>& window
     );
 
-    void ensureEnoughVectorSpace(
-        std::vector<std::vector<std::complex<float>>>& fftResult,
-        std::vector<std::vector<float>>& times,
-        std::vector<std::vector<float>>& frequencies,
-        std::vector<std::vector<float>>& magnitudes
-    );
-
-    void resize2dVectorIfNeeded(std::vector<std::vector<float>>& vector, int numRows, int numColumns);
-
+    void resizeFFTResultVectorIfNeeded(std::vector<float>& vector);
 
 private:
     int sampleRate;
