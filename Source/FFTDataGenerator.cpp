@@ -24,23 +24,19 @@ void FFTDataGenerator::updateFFTSize(int size) {
 
 void FFTDataGenerator::reassignedSpectrogram(
     juce::AudioBuffer<float>& buffer,
-    std::vector<std::vector<float>>& times,
-    std::vector<std::vector<float>>& frequencies,
-    std::vector<std::vector<float>>& magnitudes
+    std::vector<float>& times,
+    std::vector<float>& frequencies,
+    std::vector<float>& magnitudes
 ) {
     int bufferSize = buffer.getNumSamples();
-    auto spectrumHann = stft(buffer, standardWindow);
-    auto spectrumHannDerivative = stft(buffer, derivativeWindow);
-    auto spectumHannTimeWeighted = stft(buffer, timeWeightedWindow);
-    auto spectrumHannDerivativeTimeWeighted = stft(buffer, derivativeTimeWeightedWindow);
-    int hopLength = fftSize / 4;
-    int numFrames = spectrumHann.size();
+    auto fftResult = doFFT(buffer, standardWindow);
+    auto fftWindowDerivativeResult = doFFT(buffer, derivativeWindow);
+    auto fftTimeWeightedWindowResult = doFFT(buffer, timeWeightedWindow);
+    auto fftTimeWeightedWindowDerivativeResult = doFFT(buffer, derivativeTimeWeightedWindow);
 
-    if (numFrames == 0) {
-        return;
-    }
-
-    ensureEnoughVectorSpace(spectrumHann, times, frequencies, magnitudes);
+    resizeFFTResultVectorIfNeeded(magnitudes);
+    resizeFFTResultVectorIfNeeded(frequencies);
+    resizeFFTResultVectorIfNeeded(times);
 
     float currentFrequency = 0.f;
     float frequencyCorrectionRadians = 0.f;
@@ -51,7 +47,6 @@ void FFTDataGenerator::reassignedSpectrogram(
     float fftBinSize = (float)sampleRate / (float)fftSize;
     float pi = 3.14159265358979;
     float totalTimeSeconds = (float)bufferSize / (float)sampleRate;
-    float normalizedTimeStep = (float)totalTimeSeconds / (float)numFrames;
     float mixedPartialPhaseDerivative = 0.f;
     float magnitudeSquared = 0.f;
 
@@ -59,80 +54,59 @@ void FFTDataGenerator::reassignedSpectrogram(
     std::complex<float> X_Dh;
     std::complex<float> X_Th;
     std::complex<float> X_T_Dh;
-
     std::complex<float> demonimator;
+    std::vector<float> mixedDerivative(fftSize / 2, 0.f);
 
-    std::vector<float> mixedDerivative(spectrumHann[0].size(), 0.f);
-
-    for (int timeIndex = 0; timeIndex < numFrames; timeIndex++) {
-        currentTimeSeconds = (timeIndex * normalizedTimeStep) - totalTimeSeconds;
-
-        for (int frequencyBin = 0; frequencyBin < spectrumHann[0].size(); frequencyBin++) {
-            currentFrequency = frequencyBin * fftBinSize;
-            X = spectrumHann[timeIndex][frequencyBin];
-            X_Dh = spectrumHannDerivative[timeIndex][frequencyBin];
-            X_Th = spectumHannTimeWeighted[timeIndex][frequencyBin];
-            X_T_Dh = spectrumHannDerivativeTimeWeighted[timeIndex][frequencyBin];
-            magnitude = std::abs(X);
-            magnitudeSquared = magnitude * magnitude;
+    // Only go to half the FFT size because we only want the positive frequency information.
+    for (int frequencyBin = 0; frequencyBin < fftSize / 2; frequencyBin++) {
+        currentFrequency = frequencyBin * fftBinSize;
+        X = fftResult[frequencyBin];
+        X_Dh = fftWindowDerivativeResult[frequencyBin];
+        X_Th = fftTimeWeightedWindowResult[frequencyBin];
+        X_T_Dh = fftTimeWeightedWindowDerivativeResult[frequencyBin];
+        magnitude = std::abs(X);
+        magnitudeSquared = std::norm(X);
             
-            if (magnitude == 0) {
-                continue;
-            }
-            
-            float t1 = std::real(X_T_Dh * std::conj(X) / magnitudeSquared);
-            float t2 = std::real(X_Th * X_Dh / magnitudeSquared);
-
-            mixedPartialPhaseDerivative = t1 - t2;
-            mixedDerivative[frequencyBin] = mixedPartialPhaseDerivative;
-
-            // We expect that these values should be close to 0 it they are.
-            bool isImpulseComponent = std::abs(mixedPartialPhaseDerivative + 1) < 5;
-            bool isSinusoidalComponent = std::abs(mixedPartialPhaseDerivative) < 5;
-
-            if (!isImpulseComponent || !isSinusoidalComponent) {
-                magnitude = 0; // filter it out.
-            }
-
-            frequencyCorrectionRadians = -std::imag((X_Dh * std::conj(X)) / magnitudeSquared);
-            frequencyCorrectionHz = frequencyCorrectionRadians * sampleRate / (2 * pi);
-            correctedTimeSeconds = currentTimeSeconds - std::real(X_Th * std::conj(X) / magnitudeSquared) / sampleRate;
-
-            times[timeIndex][frequencyBin] = correctedTimeSeconds;
-            frequencies[timeIndex][frequencyBin] = currentFrequency + frequencyCorrectionHz;
-            magnitudes[timeIndex][frequencyBin] = magnitude; // in Gain
+        if (magnitude == 0) {
+            // Skip unnecessary calculations
+            continue;
         }
 
-        continue;
-    }
-}
+        float t1 = std::real(X_T_Dh * std::conj(X) / magnitudeSquared);
+        float t2 = std::real(X_Th * X_Dh / magnitudeSquared);
 
-void FFTDataGenerator::resize2dVectorIfNeeded(std::vector<std::vector<float>>& vector, int numRows, int numColumns) {
-    if (vector.size() != numRows || vector[0].size() != numColumns) {
-        vector.resize(numRows);
+        mixedPartialPhaseDerivative = t1 - t2;
+        mixedDerivative[frequencyBin] = mixedPartialPhaseDerivative;
 
-        for (auto& vec : vector) {
-            if (vec.size() != numColumns) {
-                vec.resize(numColumns, 0.0f);
-            }
+        // We expect that these values should be close to 0 it they are.
+        bool isImpulseComponent = std::abs(mixedPartialPhaseDerivative + 1) < 1;
+        bool isSinusoidalComponent = std::abs(mixedPartialPhaseDerivative) < 1;
+
+        if (!isImpulseComponent || !isSinusoidalComponent) {
+            magnitude = 0; // filter it out.
         }
+
+        frequencyCorrectionRadians = -std::imag((X_Dh * std::conj(X)) / magnitudeSquared);
+        frequencyCorrectionHz = frequencyCorrectionRadians * sampleRate / (2 * pi);
+        correctedTimeSeconds = 0; // currentTimeSeconds - std::real(X_Th * std::conj(X) / magnitudeSquared) / sampleRate;
+
+        times[frequencyBin] = correctedTimeSeconds;
+        frequencies[frequencyBin] = currentFrequency + frequencyCorrectionHz;
+
+        // in Gain, such that a known reassigned sine wave at an amplitude of 1 gets a magnitude of 1.
+        // I'm not sure where the other factor of 2 is coming from.
+        magnitudes[frequencyBin] = 2 * magnitude; 
     }
+
+    return;
 }
 
-void FFTDataGenerator::ensureEnoughVectorSpace(
-    std::vector<std::vector<std::complex<float>>>& fftResult,
-    std::vector<std::vector<float>>& times,
-    std::vector<std::vector<float>>& frequencies,
-    std::vector<std::vector<float>>& magnitudes
-) {
-    // Calculate the number of frames and the size of each inner vector.
-    // Since we're always using the same buffer size to the STFTs, actual allocations should really only happen once or twice.
-    size_t numRows = fftResult.size();
-    size_t numColumns = fftResult[0].size();
-
-    resize2dVectorIfNeeded(magnitudes, numRows, numColumns);
-    resize2dVectorIfNeeded(frequencies, numRows, numColumns);
-    resize2dVectorIfNeeded(times, numRows, numColumns);
+void FFTDataGenerator::resizeFFTResultVectorIfNeeded(std::vector<float>& vector) {
+    // When we do an FFT, we get both the positive and negative frequency information, which is mirrored around the center.
+    // We only want the positive frequency information, so, we only care about the first half of the FFT result.
+    if (vector.size() != fftSize / 2) {
+        vector.resize(fftSize / 2);
+    }
 }
 
 void FFTDataGenerator::updateTimeWeightedWindow() {
@@ -160,6 +134,9 @@ void FFTDataGenerator::updateTimeWeightedWindow() {
 }
 
 void FFTDataGenerator::updateDerivativeWindow() {
+    // Use linear approximation to get the derivative of the window function.
+    // f'(x) = f(x + h) - f(x - h) / 2h
+
     derivativeWindow.resize(fftSize);
     int previousIndex = 0;
     int nextIndex = 0;
@@ -180,37 +157,29 @@ void FFTDataGenerator::updateDerivativeTimeWeightedWindow() {
     }
 }
 
-std::vector<std::vector<std::complex<float>>> FFTDataGenerator::stft(const juce::AudioBuffer<float>& inputBuffer, std::vector<float>& window) {
-    int hopLength = fftSize / 4;
-    int numFrames = (inputBuffer.getNumSamples() - fftSize) / hopLength + 1;
-    int numOutputChannels = inputBuffer.getNumChannels();
+std::vector<std::complex<float>> FFTDataGenerator::doFFT(const juce::AudioBuffer<float>& inputBuffer, std::vector<float>& window) {
+    int channel = 0; // Left channel only for now
 
-    // Temporary buffers
-    std::vector<std::complex<float>> frame(fftSize, 0.0f);
-    std::vector<std::complex<float>> frameFFTResult(fftSize, 0.0f);
-    std::vector<std::vector<std::complex<float>>> allFrameResults(numFrames, std::vector<std::complex<float>>(fftSize / 2 + 1));
+    std::vector<std::complex<float>> windowedSignal(fftSize, 0.0f);
+    std::vector<std::complex<float>> result(fftSize, 0.0f);
 
-    for (int channel = 0; channel < numOutputChannels; channel++) {
-        const float* inputChannelData = inputBuffer.getReadPointer(channel);
+    const float* inputChannelData = inputBuffer.getReadPointer(0);
             
-        for (int i = 0; i < numFrames; i++) {
-            int start = i * hopLength;
-
-            for (int j = 0; j < fftSize; j++) {
-                frame[j] = inputChannelData[start + j] * window[j];
-            }
-
-            // Perform FFT
-            fft.perform(frame.data(), frameFFTResult.data(), false);
-
-            // Copy the result into the 2d array.
-            std::memcpy(
-                allFrameResults[i].data(), // Destination
-                frameFFTResult.data(),     // Source
-                (fftSize / 2 + 1) * sizeof(std::complex<float>) // Number of bytes to copy
-            );
-        }
+    // Multiply by the windowing function to prevent FFT artifacts.
+    for (int i = 0; i < fftSize; i++) {
+        windowedSignal[i] = inputChannelData[i] * window[i];
     }
 
-    return allFrameResults;
+    // Here we are getting the complex result from the FFT, not just the magnitudes.
+    // This is because we need the imaginary parts for phase info.
+    fft.perform(windowedSignal.data(), result.data(), false);
+
+    // Normalize the result by the length of the FFT.
+    // E.g. if a test signal with an amplitude of 1 goes in, we should see an amplitude of 1 in the corresponding POSITIVE frequency bin.
+    // The FFT result splits the amplitude over the positive and negative frequency components, so, this is why we divide by half the FFT size.
+    for (int i = 0; i < fftSize; i++) {
+        result[i] /= (fftSize / 2.0);
+    }
+
+    return result;
 }

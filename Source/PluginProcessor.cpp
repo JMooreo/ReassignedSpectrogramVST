@@ -21,7 +21,7 @@ SpectrogramVSTAudioProcessor::SpectrogramVSTAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-        fftDataGenerator(2048, 48000)
+        fftDataGenerator(1024, 48000)
 #endif
 {
 }
@@ -102,11 +102,11 @@ void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samples
 
     osc.initialise([](float x) { return std::sin(x); });
     osc.prepare(spec);
-    osc.setFrequency(40);
+    osc.setFrequency(30);
 
-    gain.setGainLinear(0.1f);
+    gain.setGainLinear(0.5f);
 
-    longAudioBuffer.setSize(2, 8192);
+    fftBuffer.setSize(2, 1024);
 }
 
 void SpectrogramVSTAudioProcessor::releaseResources()
@@ -144,32 +144,32 @@ bool SpectrogramVSTAudioProcessor::isBusesLayoutSupported (const BusesLayout& la
 void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     /*
-        juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::AudioBlock<float> block(buffer);
 
-        buffer.clear();
+    buffer.clear();
 
-        juce::dsp::ProcessContextReplacing<float> stereoContext(block);
-        osc.process(stereoContext);
-        gain.process(stereoContext);
+    juce::dsp::ProcessContextReplacing<float> stereoContext(block);
+    osc.process(stereoContext);
+    gain.process(stereoContext);
     */
 
-    pushIntoLongBuffer(buffer);
+    pushIntoFFTBuffer(buffer);
 }
 
-void SpectrogramVSTAudioProcessor::pushIntoLongBuffer(juce::AudioBuffer<float>& buffer) {
+void SpectrogramVSTAudioProcessor::pushIntoFFTBuffer(juce::AudioBuffer<float>& buffer) {
     int size = buffer.getNumSamples();
 
     for (int channel = 0; channel < 2; channel++) {
         // Move the existing data back by the size of the new buffer
         juce::FloatVectorOperations::copy( 
-            longAudioBuffer.getWritePointer(channel, 0), // destination
-            longAudioBuffer.getReadPointer(channel, size), // source
-            longAudioBuffer.getNumSamples() - size // num values
+            fftBuffer.getWritePointer(channel, 0), // destination
+            fftBuffer.getReadPointer(channel, size), // source
+            fftBuffer.getNumSamples() - size // num values
         );
 
         // Put the new data into the buffer
         juce::FloatVectorOperations::copy(
-            longAudioBuffer.getWritePointer(channel, longAudioBuffer.getNumSamples() - size), // destination
+            fftBuffer.getWritePointer(channel, fftBuffer.getNumSamples() - size), // destination
             buffer.getReadPointer(channel, 0), // source
             size
         );

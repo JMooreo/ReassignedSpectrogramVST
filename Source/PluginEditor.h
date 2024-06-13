@@ -27,13 +27,11 @@ private:
     float refreshRateHz;
     int spectrogramImagePos;
     int scrollSpeed;
-    int spectrogramProcessingSize;
-    std::vector<std::vector<float>> times;
-    std::vector<std::vector<float>> frequencies;
-    std::vector<std::vector<float>> magnitudes;
+    std::vector<float> times;
+    std::vector<float> frequencies;
+    std::vector<float> magnitudes;
     juce::Image spectrogramImage;
     SpectrogramVSTAudioProcessor& audioProcessor;
-    juce::AudioBuffer<float> spectrogramBuffer;
 
     juce::Colour interpolateColor(float t, juce::Colour start, juce::Colour end);
 
