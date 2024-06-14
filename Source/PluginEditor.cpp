@@ -25,11 +25,23 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
     addAndMakeVisible(despecklingCutoffSlider);
     addAndMakeVisible(fftSizeComboBox);
 
+    addAndMakeVisible(noiseFloorSliderLabel);
+    addAndMakeVisible(despecklingCutoffLabel);
+    addAndMakeVisible(fftSizeComboBoxLabel);
+
     fftSizeComboBox.addItem("1024", 1);
     fftSizeComboBox.addItem("2048", 2);
     fftSizeComboBox.addItem("4096", 3);
 
-    setSize(712, 512);
+    noiseFloorSliderLabel.setText("Noise Floor (dB)", juce::dontSendNotification);
+    despecklingCutoffLabel.setText("Despeckling Cutoff", juce::dontSendNotification);
+    fftSizeComboBoxLabel.setText("FFT Size", juce::dontSendNotification);
+
+    noiseFloorSliderLabel.attachToComponent(&noiseFloorSlider, true);
+    despecklingCutoffLabel.attachToComponent(&despecklingCutoffSlider, true);
+    fftSizeComboBoxLabel.attachToComponent(&fftSizeComboBox, true);
+
+    setSize(862, 512);
     initializeColorMap();
     startTimerHz(refreshRateHz);
 }
@@ -62,6 +74,7 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
     float maxFrequency = 24000.f;
     float minMagnitudeDb = audioProcessor.noiseFloorDb;
     float maxMagnitudeDb = -14.9f;
+    float pixelsPerSecond = 1 / refreshRateHz;
     std::vector<float> largestMagnitudeForY(spectrogramHeight, 0.f);
     int x;
     int y;
@@ -73,8 +86,8 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
 
     // Draw the new stuff
     for (int i = 0; i < audioProcessor.magnitudes.size(); i++) {
-        x = spectrogramImagePos; //+ (1 - (times[i] / maxTimeSeconds)) * spectrogramWidth;
-        //x %= spectrogramWidth;
+        x = spectrogramImagePos + audioProcessor.times[i] / pixelsPerSecond;
+        x %= spectrogramWidth;
         y = spectrogramHeight - mapFrequencyToPixel(audioProcessor.frequencies[i], minFrequency, maxFrequency, 0, spectrogramHeight - 1);
 
         if (x >= 0 && x < spectrogramWidth && y >= 0 && y < spectrogramHeight)
@@ -83,7 +96,7 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
             float normalizedMagnitude = juce::jmap<float>(magnitude, minMagnitudeDb, maxMagnitudeDb, 0.0f, 1.0f);
 
             if (normalizedMagnitude > 0 && normalizedMagnitude > largestMagnitudeForY[y]) {
-                spectrogramImage.setPixelAt(x, y, juce::Colour::greyLevel(normalizedMagnitude));
+                spectrogramImage.setPixelAt(x, y, infernoGradient.getColourAtPosition(normalizedMagnitude));
                 largestMagnitudeForY[y] = normalizedMagnitude;
             }
         }
@@ -130,13 +143,10 @@ void SpectrogramVSTAudioProcessorEditor::initializeColorMap() {
 
 void SpectrogramVSTAudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
     auto bounds = getLocalBounds();
-    auto slidersArea = bounds.removeFromRight(200);
-    float height = bounds.getHeight() * 0.33;
+    auto slidersArea = bounds.removeFromRight(200).removeFromLeft(175).removeFromTop(500);
 
-    noiseFloorSlider.setBounds(slidersArea.removeFromTop(height));
-    despecklingCutoffSlider.setBounds(slidersArea.removeFromTop(height));
-    fftSizeComboBox.setBounds(slidersArea);
+    noiseFloorSlider.setBounds(slidersArea.removeFromTop(75));
+    despecklingCutoffSlider.setBounds(slidersArea.removeFromTop(50));
+    fftSizeComboBox.setBounds(slidersArea.removeFromTop(75).removeFromBottom(30));
 }

@@ -30,16 +30,18 @@ private:
     juce::Image spectrogramImage;
     SpectrogramVSTAudioProcessor& audioProcessor;
     juce::ColourGradient infernoGradient;
+
     juce::Slider noiseFloorSlider;
     juce::Slider despecklingCutoffSlider;
     juce::ComboBox fftSizeComboBox;
+
     juce::AudioProcessorValueTreeState::SliderAttachment noiseFloorSliderAttachment;
     juce::AudioProcessorValueTreeState::SliderAttachment despecklingCutoffSliderAttachment;
     juce::AudioProcessorValueTreeState::ComboBoxAttachment fftSizeComboBoxAttachment;
 
-    juce::Colour interpolateColor(float t, juce::Colour start, juce::Colour end);
-
-    juce::Colour getColorForLevel(float level);
+    juce::Label noiseFloorSliderLabel;
+    juce::Label despecklingCutoffLabel;
+    juce::Label fftSizeComboBoxLabel;
 
     void updateSpectrogram();
 

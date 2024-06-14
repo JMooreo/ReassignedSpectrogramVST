@@ -238,7 +238,7 @@ SpectrogramVSTAudioProcessor::createParameterLayout() {
         std::make_unique<juce::AudioParameterFloat>(
             "Despeckling Cutoff",
             "Despeckling Cutoff",
-            0.f, // min
+            1.f, // min
             10.f, // max
             1.f // default
         )
@@ -257,7 +257,7 @@ SpectrogramVSTAudioProcessor::createParameterLayout() {
             "FFT Size",
             "FFT Size",
             fftChoices,
-            0
+            1
         )
     );
 
