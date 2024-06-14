@@ -1,14 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
 
-enum FFTOrder
-{
-    order1024 = 10,
-    order2048 = 11,
-    order4096 = 12,
-    order8192 = 13
-};
-
 class FFTDataGenerator
 {
 public:
@@ -16,13 +8,11 @@ public:
 
     FFTDataGenerator(int _fftSize, int _sampleRate);
 
-    void updateFFTSize(int size);
-
     void reassignedSpectrogram(
         juce::AudioBuffer<float>& buffer,
-        std::vector<std::vector<float>>& times,
-        std::vector<std::vector<float>>& frequencies,
-        std::vector<std::vector<float>>& magnitudes
+        std::vector<float>& times,
+        std::vector<float>& frequencies,
+        std::vector<float>& magnitudes
     );
 
     void updateTimeWeightedWindow();
@@ -31,20 +21,14 @@ public:
 
     void updateDerivativeTimeWeightedWindow();
 
-    std::vector<std::vector<std::complex<float>>> stft(
+    std::vector<std::complex<float>> doFFT(
         const juce::AudioBuffer<float>&inputBuffer, 
         std::vector<float>& window
     );
 
-    void ensureEnoughVectorSpace(
-        std::vector<std::vector<std::complex<float>>>& fftResult,
-        std::vector<std::vector<float>>& times,
-        std::vector<std::vector<float>>& frequencies,
-        std::vector<std::vector<float>>& magnitudes
-    );
+    void FFTDataGenerator::ensureFFTResultSpace(std::vector<float>& vector);
 
-    void resize2dVectorIfNeeded(std::vector<std::vector<float>>& vector, int numRows, int numColumns);
-
+    void FFTDataGenerator::updateParameters(float despeckleCutoff, float fftSize);
 
 private:
     int sampleRate;
@@ -53,4 +37,5 @@ private:
     std::vector<float> timeWeightedWindow;
     std::vector<float> derivativeTimeWeightedWindow;
     juce::dsp::FFT fft;
+    float despecklingCutoff;
 };

@@ -40,7 +40,7 @@ public:
     bool producesMidi() const override;
     bool isMidiEffect() const override;
     double getTailLengthSeconds() const override;
-    void SpectrogramVSTAudioProcessor::pushIntoLongBuffer(juce::AudioBuffer<float>& buffer);
+    void SpectrogramVSTAudioProcessor::pushIntoFFTBuffer(juce::AudioBuffer<float>& buffer);
 
     int getNumPrograms() override;
     int getCurrentProgram() override;
@@ -51,9 +51,24 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    juce::AudioBuffer<float> longAudioBuffer;
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+    std::vector<float> times;
+    std::vector<float> frequencies;
+    std::vector<float> magnitudes;
+
+    float noiseFloorDb = -48.f;
+    float despecklingCutoff = 1.f;
+    float fftSize = 1024.f;
+
+    juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameterLayout() };
+
 private:
+    juce::AudioBuffer<float> fftBuffer;
     juce::dsp::Oscillator<float> osc;
     juce::dsp::Gain<float> gain;
+    std::vector<int> fftChoiceOrders;
+    void SpectrogramVSTAudioProcessor::updateParameters();
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpectrogramVSTAudioProcessor)
 };

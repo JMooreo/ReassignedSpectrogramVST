@@ -27,13 +27,15 @@ private:
     float refreshRateHz;
     int spectrogramImagePos;
     int scrollSpeed;
-    int spectrogramProcessingSize;
-    std::vector<std::vector<float>> times;
-    std::vector<std::vector<float>> frequencies;
-    std::vector<std::vector<float>> magnitudes;
     juce::Image spectrogramImage;
     SpectrogramVSTAudioProcessor& audioProcessor;
-    juce::AudioBuffer<float> spectrogramBuffer;
+    juce::ColourGradient infernoGradient;
+    juce::Slider noiseFloorSlider;
+    juce::Slider despecklingCutoffSlider;
+    juce::ComboBox fftSizeComboBox;
+    juce::AudioProcessorValueTreeState::SliderAttachment noiseFloorSliderAttachment;
+    juce::AudioProcessorValueTreeState::SliderAttachment despecklingCutoffSliderAttachment;
+    juce::AudioProcessorValueTreeState::ComboBoxAttachment fftSizeComboBoxAttachment;
 
     juce::Colour interpolateColor(float t, juce::Colour start, juce::Colour end);
 
@@ -44,6 +46,8 @@ private:
     void timerCallback();
 
     void drawSpectrogram(juce::Graphics& g, juce::Rectangle<int> area);
+
+    void initializeColorMap();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpectrogramVSTAudioProcessorEditor)
 };

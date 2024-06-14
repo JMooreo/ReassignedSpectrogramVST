@@ -24,6 +24,9 @@ SpectrogramVSTAudioProcessor::SpectrogramVSTAudioProcessor()
         fftDataGenerator(2048, 48000)
 #endif
 {
+    for (int i = 10; i < 13; i++) {
+        fftChoiceOrders.push_back(i);
+    }
 }
 
 SpectrogramVSTAudioProcessor::~SpectrogramVSTAudioProcessor()
@@ -105,8 +108,7 @@ void SpectrogramVSTAudioProcessor::prepareToPlay (double sampleRate, int samples
     osc.setFrequency(40);
 
     gain.setGainLinear(0.1f);
-
-    longAudioBuffer.setSize(2, 8192);
+    updateParameters();
 }
 
 void SpectrogramVSTAudioProcessor::releaseResources()
@@ -145,31 +147,31 @@ void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
 {
     /*
         juce::dsp::AudioBlock<float> block(buffer);
-
         buffer.clear();
-
         juce::dsp::ProcessContextReplacing<float> stereoContext(block);
         osc.process(stereoContext);
         gain.process(stereoContext);
     */
 
-    pushIntoLongBuffer(buffer);
+    pushIntoFFTBuffer(buffer);
+    updateParameters(); // TODO: This is pretty expensive and we don't have to do this every time!
+    fftDataGenerator.reassignedSpectrogram(fftBuffer, times, frequencies, magnitudes);
 }
 
-void SpectrogramVSTAudioProcessor::pushIntoLongBuffer(juce::AudioBuffer<float>& buffer) {
+void SpectrogramVSTAudioProcessor::pushIntoFFTBuffer(juce::AudioBuffer<float>& buffer) {
     int size = buffer.getNumSamples();
 
     for (int channel = 0; channel < 2; channel++) {
         // Move the existing data back by the size of the new buffer
         juce::FloatVectorOperations::copy( 
-            longAudioBuffer.getWritePointer(channel, 0), // destination
-            longAudioBuffer.getReadPointer(channel, size), // source
-            longAudioBuffer.getNumSamples() - size // num values
+            fftBuffer.getWritePointer(channel, 0), // destination
+            fftBuffer.getReadPointer(channel, size), // source
+            fftBuffer.getNumSamples() - size // num values
         );
 
         // Put the new data into the buffer
         juce::FloatVectorOperations::copy(
-            longAudioBuffer.getWritePointer(channel, longAudioBuffer.getNumSamples() - size), // destination
+            fftBuffer.getWritePointer(channel, fftBuffer.getNumSamples() - size), // destination
             buffer.getReadPointer(channel, 0), // source
             size
         );
@@ -192,11 +194,74 @@ void SpectrogramVSTAudioProcessor::getStateInformation (juce::MemoryBlock& destD
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    juce::MemoryOutputStream mos(destData, true);
+    apvts.state.writeToStream(mos);
 }
 
 void SpectrogramVSTAudioProcessor::setStateInformation (const void* data, int sizeInBytes) {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    auto tree = juce::ValueTree::readFromData(data, sizeInBytes);
+
+    if (tree.isValid()) {
+        apvts.replaceState(tree);
+        updateParameters();
+    }
+}
+
+void SpectrogramVSTAudioProcessor::updateParameters() {
+    noiseFloorDb = apvts.getRawParameterValue("Noise Floor")->load();
+    despecklingCutoff = apvts.getRawParameterValue("Despeckling Cutoff")->load();
+
+    int fftIndex = apvts.getRawParameterValue("FFT Size")->load();
+    fftSize = 1 << fftChoiceOrders[fftIndex];
+
+    fftBuffer.setSize(2, fftSize);
+    fftDataGenerator.updateParameters(fftSize, despecklingCutoff);
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout 
+SpectrogramVSTAudioProcessor::createParameterLayout() {
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add(
+        std::make_unique<juce::AudioParameterFloat>(
+            "Noise Floor",
+            "Noise Floor",
+            -96.f, // min
+            -15.f, // max
+            -48.f // default
+        )
+    );
+
+    layout.add(
+        std::make_unique<juce::AudioParameterFloat>(
+            "Despeckling Cutoff",
+            "Despeckling Cutoff",
+            0.f, // min
+            10.f, // max
+            1.f // default
+        )
+    );
+
+    juce::StringArray fftChoices;
+
+    for (int i = 10; i < 13; i++) {
+        juce::String str;
+        str << (1 << i);
+        fftChoices.add(str);
+    }
+
+    layout.add(
+        std::make_unique<juce::AudioParameterChoice>(
+            "FFT Size",
+            "FFT Size",
+            fftChoices,
+            0
+        )
+    );
+
+    return layout;
 }
 
 //==============================================================================
