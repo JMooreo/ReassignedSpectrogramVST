@@ -26,7 +26,7 @@ public:
         std::vector<float>& window
     );
 
-    void FFTDataGenerator::ensureFFTResultSpace(std::vector<float>& vector);
+    void FFTDataGenerator::resizeIfNecessary(std::vector<float>& vector, int size);
 
     void FFTDataGenerator::updateParameters(float despeckleCutoff, float fftSize);
 

@@ -24,7 +24,7 @@ SpectrogramVSTAudioProcessor::SpectrogramVSTAudioProcessor()
         fftDataGenerator(2048, 48000)
 #endif
 {
-    for (int i = 10; i < 13; i++) {
+    for (int i = 10; i <= 13; i++) {
         fftChoiceOrders.push_back(i);
     }
 }
@@ -216,7 +216,10 @@ void SpectrogramVSTAudioProcessor::updateParameters() {
     int fftIndex = apvts.getRawParameterValue("FFT Size")->load();
     fftSize = 1 << fftChoiceOrders[fftIndex];
 
-    fftBuffer.setSize(2, fftSize);
+    if (fftBuffer.getNumSamples() != fftSize) {
+        fftBuffer.setSize(2, fftSize);
+    }
+
     fftDataGenerator.updateParameters(fftSize, despecklingCutoff);
 }
 
@@ -246,7 +249,7 @@ SpectrogramVSTAudioProcessor::createParameterLayout() {
 
     juce::StringArray fftChoices;
 
-    for (int i = 10; i < 13; i++) {
+    for (int i = 10; i <= 13; i++) {
         juce::String str;
         str << (1 << i);
         fftChoices.add(str);

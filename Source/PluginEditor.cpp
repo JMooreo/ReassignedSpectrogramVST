@@ -32,6 +32,7 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
     fftSizeComboBox.addItem("1024", 1);
     fftSizeComboBox.addItem("2048", 2);
     fftSizeComboBox.addItem("4096", 3);
+    fftSizeComboBox.addItem("8192", 4);
 
     noiseFloorSliderLabel.setText("Noise Floor (dB)", juce::dontSendNotification);
     despecklingCutoffLabel.setText("Despeckling Cutoff", juce::dontSendNotification);

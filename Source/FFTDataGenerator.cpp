@@ -44,9 +44,9 @@ void FFTDataGenerator::reassignedSpectrogram(
     std::complex<float> X_T_Dh;
     std::vector<float> mixedDerivative(fftSize / 2, 0.f);
 
-    ensureFFTResultSpace(times);
-    ensureFFTResultSpace(frequencies);
-    ensureFFTResultSpace(magnitudes);
+    resizeIfNecessary(times, fftSize / 2);
+    resizeIfNecessary(frequencies, fftSize / 2);
+    resizeIfNecessary(magnitudes, fftSize / 2);
  
     for (int frequencyBin = 0; frequencyBin < fftSize / 2; frequencyBin++) {
         currentFrequency = frequencyBin * fftBinSize;
@@ -89,15 +89,16 @@ void FFTDataGenerator::updateParameters(float _fftSize, float _despecklingCutoff
     fftSize = _fftSize;
     fft = juce::dsp::FFT(std::log2(_fftSize));
 
-    standardWindow.resize(_fftSize);
-    juce::dsp::WindowingFunction<float>::fillWindowingTables(standardWindow.data(), _fftSize, juce::dsp::WindowingFunction<float>::hann, false);
+    resizeIfNecessary(standardWindow, fftSize);
+    juce::dsp::WindowingFunction<float>::fillWindowingTables(standardWindow.data(), _fftSize, juce::dsp::WindowingFunction<float>::blackmanHarris, false);
     updateTimeWeightedWindow();
     updateDerivativeWindow();
     updateDerivativeTimeWeightedWindow();
 }
 
 void FFTDataGenerator::updateTimeWeightedWindow() {
-    timeWeightedWindow.resize(fftSize);
+    resizeIfNecessary(timeWeightedWindow, fftSize);
+
     int halfWidth = fftSize / 2;
     int index = 0;
 
@@ -121,7 +122,8 @@ void FFTDataGenerator::updateTimeWeightedWindow() {
 }
 
 void FFTDataGenerator::updateDerivativeWindow() {
-    derivativeWindow.resize(fftSize);
+    resizeIfNecessary(derivativeWindow, fftSize);
+
     for (int i = 0; i < fftSize; i++)
     {
         if (i == 0 || i == fftSize - 1) {
@@ -134,16 +136,17 @@ void FFTDataGenerator::updateDerivativeWindow() {
 }
 
 void FFTDataGenerator::updateDerivativeTimeWeightedWindow() {
-    derivativeTimeWeightedWindow.resize(fftSize);
+    resizeIfNecessary(derivativeTimeWeightedWindow, fftSize);
+
     for (int i = 0; i < fftSize; i++)
     {
         derivativeTimeWeightedWindow[i] = derivativeWindow[i] * i;
     }
 }
 
-void FFTDataGenerator::ensureFFTResultSpace(std::vector<float>& vector) {
-    if (vector.size() != (fftSize / 2)) {
-        vector.resize(fftSize / 2, 0.f);
+void FFTDataGenerator::resizeIfNecessary(std::vector<float>& vector, int size) {
+    if (vector.size() != size) {
+        vector.resize(size, 0.f);
     }
 }
 
