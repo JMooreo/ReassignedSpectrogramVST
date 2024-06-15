@@ -21,7 +21,7 @@ I plan to create builds for download in the future
 - [X] It builds and runs in a Ableton 10 Standard
 
 ## Nice to have
-- [ ] Add de-speckling
-- [ ] Add FFT size dropdown
+- [X] Add de-speckling
+- [X] Add FFT size dropdown
 - [ ] Resizable screen
 - [ ] Hover to view frequency and note name
