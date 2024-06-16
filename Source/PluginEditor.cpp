@@ -18,12 +18,14 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
         spectrogramImagePos(0),
         despecklingCutoffSliderAttachment(audioProcessor.apvts, "Despeckling Cutoff", despecklingCutoffSlider),
         noiseFloorSliderAttachment(audioProcessor.apvts, "Noise Floor", noiseFloorSlider),
-        fftSizeComboBoxAttachment(audioProcessor.apvts, "FFT Size", fftSizeComboBox)
+        fftSizeComboBoxAttachment(audioProcessor.apvts, "FFT Size", fftSizeComboBox),
+        useReassignmentComboBoxAttachment(audioProcessor.apvts, "Reassignment Enabled", useReassignmentComboBox)
 {
 
     addAndMakeVisible(noiseFloorSlider);
     addAndMakeVisible(despecklingCutoffSlider);
     addAndMakeVisible(fftSizeComboBox);
+    addAndMakeVisible(useReassignmentComboBox);
 
     addAndMakeVisible(noiseFloorSliderLabel);
     addAndMakeVisible(despecklingCutoffLabel);
@@ -34,13 +36,18 @@ SpectrogramVSTAudioProcessorEditor::SpectrogramVSTAudioProcessorEditor (Spectrog
     fftSizeComboBox.addItem("4096", 3);
     fftSizeComboBox.addItem("8192", 4);
 
+    useReassignmentComboBox.addItem("No", 1);
+    useReassignmentComboBox.addItem("Yes", 2);
+
     noiseFloorSliderLabel.setText("Noise Floor (dB)", juce::dontSendNotification);
     despecklingCutoffLabel.setText("Despeckling Cutoff", juce::dontSendNotification);
     fftSizeComboBoxLabel.setText("FFT Size", juce::dontSendNotification);
+    useReassignmentComboBoxLabel.setText("Reassignment Enabled", juce::dontSendNotification);
 
     noiseFloorSliderLabel.attachToComponent(&noiseFloorSlider, true);
     despecklingCutoffLabel.attachToComponent(&despecklingCutoffSlider, true);
     fftSizeComboBoxLabel.attachToComponent(&fftSizeComboBox, true);
+    useReassignmentComboBoxLabel.attachToComponent(&useReassignmentComboBox, true);
 
     setSize(862, 512);
     initializeColorMap();
@@ -63,6 +70,44 @@ inline int mapFrequencyToPixel(float frequency, float minFreq, float maxFreq, in
 }
 
 void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
+    // Display the spectral frame using only the FFT result.
+    int spectrogramHeight = spectrogramImage.getHeight();
+    int spectrogramWidth = spectrogramImage.getWidth();
+    int binPixelStart = 0;
+    int binPixelEnd = spectrogramHeight;
+
+    float minFrequency = 20.f;
+    float maxFrequency = 24000.f;
+    float minMagnitudeDb = audioProcessor.noiseFloorDb;
+    float maxMagnitudeDb = -14.9f;
+    float binSize = sampleRate / audioProcessor.fftSize;
+    float currentBinFrequency = 0;
+    float currentBinMagnitude = 0;
+    float normalizedMagnitude = 0;
+
+    for (int i = 0; i < audioProcessor.standardFFTResult.size(); i++) {
+        currentBinMagnitude = juce::jlimit(minMagnitudeDb, maxMagnitudeDb, audioProcessor.standardFFTResult[i]);
+        currentBinFrequency = (i + 1) * binSize;
+        binPixelEnd = mapFrequencyToPixel(currentBinFrequency, minFrequency, maxFrequency, 0, spectrogramHeight);
+        normalizedMagnitude = juce::jmap<float>(currentBinMagnitude, minMagnitudeDb, maxMagnitudeDb, 0.0f, 1.0f);
+
+        for (int y = binPixelStart; y < binPixelEnd; y++) {
+            if (y < spectrogramHeight) {
+                spectrogramImage.setPixelAt(spectrogramImagePos, spectrogramHeight - y, infernoGradient.getColourAtPosition(normalizedMagnitude));
+            }
+        }
+
+        binPixelStart = binPixelEnd;
+    }
+
+    spectrogramImagePos += 1;
+
+    if (spectrogramImagePos >= spectrogramWidth) {
+        spectrogramImagePos = 0;
+    }
+}
+
+void SpectrogramVSTAudioProcessorEditor::updateSpectrogramReassigned() {
     // Define the height and width of the spectrogram image
     int spectrogramHeight = spectrogramImage.getHeight();
     int spectrogramWidth = spectrogramImage.getWidth();
@@ -112,7 +157,13 @@ void SpectrogramVSTAudioProcessorEditor::updateSpectrogram() {
 
 void SpectrogramVSTAudioProcessorEditor::timerCallback()
 {
-    updateSpectrogram();
+    if (audioProcessor.apvts.getRawParameterValue("Reassignment Enabled")->load()) {
+        updateSpectrogramReassigned();
+    }
+    else {
+        updateSpectrogram();
+    }
+
     repaint();
 }
 
@@ -147,7 +198,8 @@ void SpectrogramVSTAudioProcessorEditor::resized()
     auto bounds = getLocalBounds();
     auto slidersArea = bounds.removeFromRight(200).removeFromLeft(175).removeFromTop(500);
 
-    noiseFloorSlider.setBounds(slidersArea.removeFromTop(75));
+    noiseFloorSlider.setBounds(slidersArea.removeFromTop(50));
     despecklingCutoffSlider.setBounds(slidersArea.removeFromTop(50));
-    fftSizeComboBox.setBounds(slidersArea.removeFromTop(75).removeFromBottom(30));
+    fftSizeComboBox.setBounds(slidersArea.removeFromTop(50).removeFromBottom(30));
+    useReassignmentComboBox.setBounds(slidersArea.removeFromTop(50).removeFromBottom(30));
 }

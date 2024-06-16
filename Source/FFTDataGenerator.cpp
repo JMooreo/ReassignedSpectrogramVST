@@ -18,10 +18,12 @@ void FFTDataGenerator::reassignedSpectrogram(
     juce::AudioBuffer<float>& buffer,
     std::vector<float>& times,
     std::vector<float>& frequencies,
-    std::vector<float>& magnitudes
+    std::vector<float>& magnitudes,
+    std::vector<float>& standardFFTResult
 ) {
     int bufferSize = buffer.getNumSamples();
     auto spectrumHann = doFFT(buffer, standardWindow);
+
     auto spectrumHannDerivative = doFFT(buffer, derivativeWindow);
     auto spectumHannTimeWeighted = doFFT(buffer, timeWeightedWindow);
     auto spectrumHannDerivativeTimeWeighted = doFFT(buffer, derivativeTimeWeightedWindow);
@@ -47,7 +49,8 @@ void FFTDataGenerator::reassignedSpectrogram(
     resizeIfNecessary(times, fftSize / 2);
     resizeIfNecessary(frequencies, fftSize / 2);
     resizeIfNecessary(magnitudes, fftSize / 2);
- 
+    resizeIfNecessary(standardFFTResult, fftSize / 2);
+
     for (int frequencyBin = 0; frequencyBin < fftSize / 2; frequencyBin++) {
         currentFrequency = frequencyBin * fftBinSize;
         X = spectrumHann[frequencyBin];
@@ -56,6 +59,8 @@ void FFTDataGenerator::reassignedSpectrogram(
         X_T_Dh = spectrumHannDerivativeTimeWeighted[frequencyBin];
         magnitude = std::abs(X);
         magnitudeSquared = magnitude * magnitude;
+
+        standardFFTResult[frequencyBin] = juce::Decibels::gainToDecibels(2 * magnitude);
             
         if (magnitude == 0) {
             continue;

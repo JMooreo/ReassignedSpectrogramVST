@@ -56,6 +56,7 @@ public:
     std::vector<float> times;
     std::vector<float> frequencies;
     std::vector<float> magnitudes;
+    std::vector<float> standardFFTResult;
 
     float noiseFloorDb = -48.f;
     float despecklingCutoff = 1.f;

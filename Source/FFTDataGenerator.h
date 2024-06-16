@@ -12,7 +12,8 @@ public:
         juce::AudioBuffer<float>& buffer,
         std::vector<float>& times,
         std::vector<float>& frequencies,
-        std::vector<float>& magnitudes
+        std::vector<float>& magnitudes,
+        std::vector<float>& standardFFTResult
     );
 
     void updateTimeWeightedWindow();

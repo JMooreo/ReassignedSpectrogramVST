@@ -155,7 +155,7 @@ void SpectrogramVSTAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
 
     pushIntoFFTBuffer(buffer);
     updateParameters(); // TODO: This is pretty expensive and we don't have to do this every time!
-    fftDataGenerator.reassignedSpectrogram(fftBuffer, times, frequencies, magnitudes);
+    fftDataGenerator.reassignedSpectrogram(fftBuffer, times, frequencies, magnitudes, standardFFTResult);
 }
 
 void SpectrogramVSTAudioProcessor::pushIntoFFTBuffer(juce::AudioBuffer<float>& buffer) {
@@ -202,6 +202,8 @@ void SpectrogramVSTAudioProcessor::setStateInformation (const void* data, int si
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
     auto tree = juce::ValueTree::readFromData(data, sizeInBytes);
+
+    return;
 
     if (tree.isValid()) {
         apvts.replaceState(tree);
@@ -260,6 +262,19 @@ SpectrogramVSTAudioProcessor::createParameterLayout() {
             "FFT Size",
             "FFT Size",
             fftChoices,
+            1
+        )
+    );
+
+    juce::StringArray useReassignmentChoices;
+    useReassignmentChoices.add("No");
+    useReassignmentChoices.add("Yes");
+
+    layout.add(
+        std::make_unique<juce::AudioParameterChoice>(
+            "Reassignment Enabled",
+            "Reassignment Enabled",
+            useReassignmentChoices,
             1
         )
     );

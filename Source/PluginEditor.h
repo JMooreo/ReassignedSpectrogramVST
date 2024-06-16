@@ -34,16 +34,21 @@ private:
     juce::Slider noiseFloorSlider;
     juce::Slider despecklingCutoffSlider;
     juce::ComboBox fftSizeComboBox;
+    juce::ComboBox useReassignmentComboBox; // TODO: This should not be a combo box.
 
     juce::AudioProcessorValueTreeState::SliderAttachment noiseFloorSliderAttachment;
     juce::AudioProcessorValueTreeState::SliderAttachment despecklingCutoffSliderAttachment;
     juce::AudioProcessorValueTreeState::ComboBoxAttachment fftSizeComboBoxAttachment;
+    juce::AudioProcessorValueTreeState::ComboBoxAttachment useReassignmentComboBoxAttachment;
 
     juce::Label noiseFloorSliderLabel;
     juce::Label despecklingCutoffLabel;
     juce::Label fftSizeComboBoxLabel;
+    juce::Label useReassignmentComboBoxLabel;
 
     void updateSpectrogram();
+
+    void updateSpectrogramReassigned();
 
     void timerCallback();
 
