@@ -1,4 +1,6 @@
-[![Demo video](images/thumbnail.png)](https://www.youtube.com/watch?v=_9qX5OIP9nE)
+Demo Video (click to view on YouTube)
+
+[![Demo video](images/example_reassignment.gif)](https://www.youtube.com/watch?v=_9qX5OIP9nE)
 
 
 # Context / Background
