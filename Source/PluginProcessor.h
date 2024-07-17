@@ -40,7 +40,7 @@ public:
     bool producesMidi() const override;
     bool isMidiEffect() const override;
     double getTailLengthSeconds() const override;
-    void SpectrogramVSTAudioProcessor::pushIntoFFTBuffer(juce::AudioBuffer<float>& buffer);
+    void pushIntoFFTBuffer(juce::AudioBuffer<float>& buffer);
 
     int getNumPrograms() override;
     int getCurrentProgram() override;
@@ -69,7 +69,7 @@ private:
     juce::dsp::Oscillator<float> osc;
     juce::dsp::Gain<float> gain;
     std::vector<int> fftChoiceOrders;
-    void SpectrogramVSTAudioProcessor::updateParameters();
+    void updateParameters();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpectrogramVSTAudioProcessor)
 };

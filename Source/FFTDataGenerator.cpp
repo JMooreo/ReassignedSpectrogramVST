@@ -1,4 +1,3 @@
-#pragma once
 #include "FFTDataGenerator.h"
 
 FFTDataGenerator::FFTDataGenerator(int _fftSize, int _sampleRate):
