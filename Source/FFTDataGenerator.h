@@ -1,5 +1,8 @@
 #pragma once
+
+#include <complex>
 #include <JuceHeader.h>
+#include <juce_dsp/juce_dsp.h>
 
 class FFTDataGenerator
 {
@@ -27,9 +30,9 @@ public:
         std::vector<float>& window
     );
 
-    void FFTDataGenerator::resizeIfNecessary(std::vector<float>& vector, int size);
+    void resizeIfNecessary(std::vector<float>& vector, int size);
 
-    void FFTDataGenerator::updateParameters(float despeckleCutoff, float fftSize);
+    void updateParameters(float despeckleCutoff, float fftSize);
 
 private:
     int sampleRate;
